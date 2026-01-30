@@ -6,6 +6,141 @@ module "dynamodb" {
   tags         = local.common_tags
 }
 
+// Onboarding Lambda
+module "onboarding_lambda" {
+  source = "./modules/lambda"
+
+  project_name      = var.project_name
+  function_name     = "onboarding"
+  source_code_path  = "${path.module}/../../backend/lambdas/onboarding/handler.py"
+  handler           = "handler.handler"
+  runtime           = "python3.10"
+  timeout           = 30
+  memory_size       = 256
+  tags              = local.common_tags
+
+  environment_vars = {
+    USERS_TABLE = module.dynamodb.users_table_name
+  }
+}
+
+resource "aws_iam_role_policy" "onboarding_policy" {
+  name = "${var.project_name}-onboarding-policy"
+  role = module.onboarding_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem"
+        ]
+        Resource = module.dynamodb.users_table_arn
+      }
+    ]
+  })
+}
+
+// Recommendation API Lambda
+module "recommendation_api_lambda" {
+  source = "./modules/lambda"
+
+  project_name      = var.project_name
+  function_name     = "recommendation-api"
+  source_code_path  = "${path.module}/../../backend/lambdas/recommendation/handler.py"
+  handler           = "handler.handler"
+  runtime           = "python3.10"
+  timeout           = 30
+  memory_size       = 256
+  tags              = local.common_tags
+
+  environment_vars = {
+    RECOMMENDATION_CACHE_TABLE     = module.dynamodb.recommendation_cache_table_name
+    RECOMMENDATION_WORKER_FUNCTION = module.recommendation_worker_lambda.lambda_name
+    TOP_N                          = "20"
+  }
+}
+
+resource "aws_iam_role_policy" "recommendation_api_policy" {
+  name = "${var.project_name}-recommendation-api-policy"
+  role = module.recommendation_api_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem"
+        ]
+        Resource = module.dynamodb.recommendation_cache_table_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = module.recommendation_worker_lambda.lambda_arn
+      }
+    ]
+  })
+}
+
+// Recommendation Worker Lambda
+module "recommendation_worker_lambda" {
+  source = "./modules/lambda"
+
+  project_name      = var.project_name
+  function_name     = "recommendation-worker"
+  source_code_path  = "${path.module}/../../backend/lambdas/recommendation_worker/handler.py"
+  handler           = "handler.handler"
+  runtime           = "python3.10"
+  timeout           = 60
+  memory_size       = 512
+  tags              = local.common_tags
+
+  environment_vars = {
+    USERS_TABLE               = module.dynamodb.users_table_name
+    INTERACTIONS_TABLE        = module.dynamodb.interactions_table_name
+    ANIME_TABLE               = module.dynamodb.anime_table_name
+    RECOMMENDATION_CACHE_TABLE = module.dynamodb.recommendation_cache_table_name
+    TOP_N                     = "20"
+    CACHE_TTL_SECONDS         = "86400"
+  }
+}
+
+resource "aws_iam_role_policy" "recommendation_worker_policy" {
+  name = "${var.project_name}-recommendation-worker-policy"
+  role = module.recommendation_worker_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          module.dynamodb.users_table_arn,
+          module.dynamodb.interactions_table_arn,
+          module.dynamodb.anime_table_arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem"
+        ]
+        Resource = module.dynamodb.recommendation_cache_table_arn
+      }
+    ]
+  })
+}
+
 // Data ingest Lambda configuration
 // This module provisions the data_ingest Lambda with S3 and DynamoDB permissions
 
@@ -62,9 +197,137 @@ resource "aws_iam_role_policy" "data_ingest_policy" {
   })
 }
 
+// API Gateway
+resource "aws_api_gateway_rest_api" "api" {
+  name = "${var.project_name}-api"
+}
+
+// /onboarding
+resource "aws_api_gateway_resource" "onboarding" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "onboarding"
+}
+
+resource "aws_api_gateway_resource" "onboarding_user" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.onboarding.id
+  path_part   = "{userId}"
+}
+
+resource "aws_api_gateway_method" "onboarding_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.onboarding_user.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "onboarding_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.onboarding_user.id
+  http_method             = aws_api_gateway_method.onboarding_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.onboarding_invoke_arn
+}
+
+// /recommendations
+resource "aws_api_gateway_resource" "recommendations" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "recommendations"
+}
+
+resource "aws_api_gateway_resource" "recommendations_user" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.recommendations.id
+  path_part   = "{userId}"
+}
+
+resource "aws_api_gateway_method" "recommendations_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.recommendations_user.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "recommendations_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.recommendations_user.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "recommendations_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.recommendations_user.id
+  http_method             = aws_api_gateway_method.recommendations_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.recommendations_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "recommendations_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.recommendations_user.id
+  http_method             = aws_api_gateway_method.recommendations_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.recommendations_invoke_arn
+}
+
+// Lambda permissions for API Gateway
+resource "aws_lambda_permission" "onboarding_api" {
+  statement_id  = "AllowAPIGatewayInvokeOnboarding"
+  action        = "lambda:InvokeFunction"
+  function_name = module.onboarding_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/onboarding/*"
+}
+
+resource "aws_lambda_permission" "recommendations_api_get" {
+  statement_id  = "AllowAPIGatewayInvokeRecommendationsGet"
+  action        = "lambda:InvokeFunction"
+  function_name = module.recommendation_api_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/GET/recommendations/*"
+}
+
+resource "aws_lambda_permission" "recommendations_api_post" {
+  statement_id  = "AllowAPIGatewayInvokeRecommendationsPost"
+  action        = "lambda:InvokeFunction"
+  function_name = module.recommendation_api_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/recommendations/*"
+}
+
+// API Deployment
+resource "aws_api_gateway_deployment" "api_deployment" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+
+  triggers = {
+    redeployment = timestamp()
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.onboarding_post,
+    aws_api_gateway_integration.recommendations_get,
+    aws_api_gateway_integration.recommendations_post,
+  ]
+}
+
+resource "aws_api_gateway_stage" "dev" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  stage_name    = "dev"
+}
+
 locals {
   common_tags = merge(var.tags, {
     Environment = "dev"
     Project     = var.project_name
   })
+
+  onboarding_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.onboarding_lambda.lambda_arn}/invocations"
+  recommendations_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.recommendation_api_lambda.lambda_arn}/invocations"
 }

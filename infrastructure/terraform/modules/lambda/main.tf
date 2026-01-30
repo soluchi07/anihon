@@ -1,6 +1,6 @@
 // Lambda execution role with minimal permissions
 resource "aws_iam_role" "lambda_exec_role" {
-  name = "${var.project_name}-lambda-exec"
+  name = "${var.project_name}-${var.function_name}-lambda-exec"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -20,7 +20,7 @@ resource "aws_iam_role" "lambda_exec_role" {
 
 // CloudWatch Logs policy for Lambda
 resource "aws_iam_role_policy" "lambda_logs" {
-  name = "${var.project_name}-lambda-logs"
+  name = "${var.project_name}-${var.function_name}-lambda-logs"
   role = aws_iam_role.lambda_exec_role.id
 
   policy = jsonencode({

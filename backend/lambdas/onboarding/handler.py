@@ -62,7 +62,7 @@ def handler(event, context):
 
     try:
         dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(USERS_TABLE)
+        table = dynamodb.Table(USERS_TABLE) # type: ignore
         table.put_item(
             Item={
                 "user_id": user_id,

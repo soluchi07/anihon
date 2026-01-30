@@ -18,6 +18,10 @@ output "anime_table_arn" {
   value = aws_dynamodb_table.anime.arn
 }
 
+output "users_table_arn" {
+  value = aws_dynamodb_table.users.arn
+}
+
 output "interactions_table_arn" {
   value = aws_dynamodb_table.interactions.arn
 }

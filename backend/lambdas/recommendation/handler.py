@@ -55,7 +55,7 @@ def _response(status_code, body):
 
 def _get_cached_recommendations(user_id):
     dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(CACHE_TABLE)
+    table = dynamodb.Table(CACHE_TABLE) # type: ignore
     resp = table.get_item(Key={"user_id": user_id})
     item = resp.get("Item")
     if not item:
