@@ -20,6 +20,10 @@ dist/
 checklist.md
 plan.md
 project_chat.json
+infrastructure/terraform/.terraform/
+
 
 # node modules
-frontend/node_modules/
+frontend/node_modules
+*.tfstate
+*.tfstate.backup
