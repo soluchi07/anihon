@@ -11,6 +11,18 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "frontend_domain" {
+  description = "Frontend domain for CORS (CloudFront distribution domain or custom domain)"
+  type        = string
+  default     = ""  # Will be set to CloudFront domain after deployment
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "dev"
+}
+
 variable "tags" {
   description = "Global tags"
   type        = map(string)

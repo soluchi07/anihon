@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import boto3
+from decimal import Decimal
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger("data_ingest")
@@ -59,7 +60,6 @@ def batch_write_to_dynamodb(table, items, batch_size=BATCH_SIZE):
     for i in range(0, len(items), batch_size):
         batch = items[i : i + batch_size]
         with table.batch_writer(
-            batch_size=len(batch),
             overwrite_by_pkeys=["anime_id"],  # idempotency: overwrite on same PK
         ) as writer:
             for item in batch:
@@ -71,6 +71,28 @@ def batch_write_to_dynamodb(table, items, batch_size=BATCH_SIZE):
                     failed += 1
 
     return written, failed
+
+
+def _to_decimal(value):
+    if isinstance(value, float):
+        return Decimal(str(value))
+    return value
+
+
+def _to_set_or_none(values):
+    if not values:
+        return None
+    s = set(values)
+    return s if len(s) > 0 else None
+
+
+def _to_int_or_none(value):
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
 
 
 def handler(event, context):
@@ -99,23 +121,46 @@ def handler(event, context):
         items = []
         for record in read_jsonl_from_s3(bucket, key, profile):
             # Transform Jikan record to DynamoDB item
+            anime_id = _to_int_or_none(record.get("anime_id"))
+            if anime_id is None:
+                logger.warning("Skipping record with invalid anime_id: %s", record.get("anime_id"))
+                continue
+
+            genres_list = record.get("genres", [])
+            primary_genre = None
+            if isinstance(genres_list, list) and len(genres_list) > 0:
+                primary_genre = genres_list[0]
+
             item = {
-                "anime_id": record.get("anime_id"),
+                "anime_id": anime_id,
                 "title": record.get("title"),
-                "alternate_titles": set(record.get("alternate_titles", [])),  # SS type
-                "genres": set(record.get("genres", [])),  # SS type
-                "studios": set(record.get("studios", [])),  # SS type
+                "alternate_titles": _to_set_or_none(record.get("alternate_titles", [])),
+                "genres": _to_set_or_none(genres_list),
+                "genre": primary_genre,
+                "studios": _to_set_or_none(record.get("studios", [])),
                 "synopsis": record.get("synopsis"),
-                "episodes": record.get("episodes"),
-                "year": record.get("year"),
+                "episodes": _to_int_or_none(record.get("episodes")),
+                "year": _to_int_or_none(record.get("year")),
                 "type": record.get("type"),
                 "rating": record.get("rating"),
-                "score": record.get("score", 5.0),
-                "popularity": record.get("popularity"),
-                "popularity_score": record.get("popularity_score", 0.0),
-                "favorites": record.get("favorites", 0),
+                "score": _to_decimal(record.get("score", 5.0)),
+                "popularity": _to_int_or_none(record.get("popularity")),
+                "popularity_score": _to_decimal(record.get("popularity_score", 0.0)),
+                "favorites": _to_int_or_none(record.get("favorites", 0)),
                 "image_url": record.get("image_url"),
             }
+
+            # Remove empty/invalid attributes (DynamoDB doesn't allow empty sets)
+            if item.get("alternate_titles") is None:
+                item.pop("alternate_titles", None)
+            if item.get("genres") is None:
+                item.pop("genres", None)
+            if item.get("genre") is None:
+                item.pop("genre", None)
+            if item.get("studios") is None:
+                item.pop("studios", None)
+            if item.get("year") is None:
+                item.pop("year", None)
             items.append(item)
 
         logger.info("Collected %d records from S3", len(items))

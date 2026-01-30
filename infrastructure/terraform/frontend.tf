@@ -1,3 +1,6 @@
+# Get current AWS account ID
+data "aws_caller_identity" "current" {}
+
 # S3 bucket for frontend hosting
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "${var.project_name}-frontend-${data.aws_caller_identity.current.account_id}"
@@ -84,27 +87,6 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     default_ttl            = 3600
     max_ttl                = 86400
     compress               = true
-  }
-
-  # Cache behavior for API requests - don't cache
-  cache_behavior {
-    path_pattern     = "/api/*"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3Origin"
-
-    forwarded_values {
-      query_string = true
-
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "https-only"
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 0
   }
 
   # SPA routing: redirect 404s to index.html

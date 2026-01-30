@@ -7,6 +7,7 @@ import os
 import json
 import time
 import logging
+from decimal import Decimal
 
 import boto3
 from botocore.exceptions import ClientError
@@ -16,6 +17,21 @@ logging.basicConfig(level=logging.INFO)
 
 CACHE_TABLE = os.environ.get("RECOMMENDATION_CACHE_TABLE", "RecommendationCache")
 DEFAULT_TOP_N = int(os.environ.get("TOP_N", "20"))
+
+
+def _from_dynamodb(obj):
+    """Convert DynamoDB types (Decimal, set) to JSON-serializable types"""
+    if isinstance(obj, list):
+        return [_from_dynamodb(item) for item in obj]
+    if isinstance(obj, dict):
+        return {key: _from_dynamodb(val) for key, val in obj.items()}
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    if isinstance(obj, set):
+        return list(obj)
+    return obj
 
 
 def _get_http_method(event):
@@ -63,7 +79,8 @@ def _get_cached_recommendations(user_id):
     ttl = item.get("ttl", 0)
     if ttl and int(ttl) < int(time.time()):
         return None
-    return item.get("recommendations", [])
+    recs = item.get("recommendations", [])
+    return _from_dynamodb(recs)
 
 
 def _trigger_worker(user_id, opt_in_popularity, top_n):

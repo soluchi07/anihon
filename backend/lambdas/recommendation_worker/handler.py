@@ -22,6 +22,7 @@ import json
 import time
 import logging
 from typing import Dict, List
+from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -30,9 +31,87 @@ from botocore.exceptions import ClientError
 import sys
 from pathlib import Path
 
-# Ensure algorithm import works
-sys.path.insert(0, str(Path(__file__).parent.parent / "recommendation"))
-from algorithm import recommend_anime
+# Ensure algorithm import works (local and Lambda)
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent / "recommendation"))
+    from algorithm import recommend_anime
+except Exception:
+    # Fallback: minimal local implementation to avoid import errors in Lambda
+    def _normalize_vector(vec):
+        import math
+        mag = math.sqrt(sum(v * v for v in vec.values()))
+        if mag == 0:
+            return vec
+        return {k: v / mag for k, v in vec.items()}
+
+    def _cosine_similarity(vec_a, vec_b):
+        if not vec_a or not vec_b:
+            return 0.0
+        vec_a = _normalize_vector(vec_a)
+        vec_b = _normalize_vector(vec_b)
+        dot = sum(vec_a.get(k, 0.0) * vec_b.get(k, 0.0) for k in vec_a)
+        return max(0.0, min(1.0, dot))
+
+    def _build_anime_vector(anime):
+        vec = {}
+        for g in (anime.get("genres") or []):
+            if isinstance(g, str) and g.strip():
+                vec[f"genre:{g}"] = vec.get(f"genre:{g}", 0.0) + 1.0
+        for s in (anime.get("studios") or []):
+            if isinstance(s, str) and s.strip():
+                vec[f"studio:{s}"] = vec.get(f"studio:{s}", 0.0) + 0.5
+        score = anime.get("score")
+        if score is not None:
+            try:
+                vec["score"] = min(1.0, float(score) / 10.0)
+            except Exception:
+                pass
+        pop = anime.get("popularity_score")
+        if pop is not None:
+            try:
+                vec["popularity"] = min(1.0, float(pop) / 100.0)
+            except Exception:
+                pass
+        return vec
+
+    def _compose_score(content_sim, popularity_score, opt_in_popularity=True):
+        if opt_in_popularity:
+            return 0.7 * content_sim + 0.3 * (float(popularity_score) / 100.0)
+        return content_sim
+
+    def recommend_anime(user_preferences, user_liked_anime, candidate_anime, top_n=20, opt_in_popularity=True, exclude_anime_ids=None):
+        if exclude_anime_ids is None:
+            exclude_anime_ids = set()
+        for liked in (user_liked_anime or []):
+            liked_id = liked.get("anime_id")
+            if liked_id is not None:
+                exclude_anime_ids.add(liked_id)
+
+        pref_vec = {}
+        for g in (user_preferences.get("genres") or []):
+            pref_vec[f"genre:{g}"] = pref_vec.get(f"genre:{g}", 0.0) + 1.0
+        for s in (user_preferences.get("studios") or []):
+            pref_vec[f"studio:{s}"] = pref_vec.get(f"studio:{s}", 0.0) + 1.0
+
+        scored = []
+        for anime in candidate_anime:
+            if anime.get("anime_id") in exclude_anime_ids:
+                continue
+            vec = _build_anime_vector(anime)
+            sim = _cosine_similarity(pref_vec, vec)
+            pop = anime.get("popularity_score", 50.0)
+            score = _compose_score(sim, pop, opt_in_popularity)
+            scored.append({
+                "anime_id": anime.get("anime_id"),
+                "title": anime.get("title"),
+                "score": round(score, 4),
+                "content_similarity": round(sim, 4),
+                "popularity_score": round(float(pop), 2),
+                "genres": anime.get("genres", []),
+                "image_url": anime.get("image_url"),
+            })
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        return scored[:top_n]
 
 logger = logging.getLogger("recommendation_worker")
 logging.basicConfig(level=logging.INFO)
@@ -89,6 +168,30 @@ def fetch_candidate_anime(table, limit: int = 200) -> List[Dict]:
     return items[:limit]
 
 
+def _to_dynamodb_safe(obj):
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, set):
+        return list(obj)
+    if isinstance(obj, dict):
+        return {k: _to_dynamodb_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_dynamodb_safe(v) for v in obj]
+    return obj
+
+
+def _to_json_safe(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, set):
+        return list(obj)
+    if isinstance(obj, dict):
+        return {k: _to_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_json_safe(v) for v in obj]
+    return obj
+
+
 def write_cache(table, user_id: str, recommendations: List[Dict], ttl_seconds: int):
     now = int(time.time())
     ttl = now + ttl_seconds
@@ -96,7 +199,7 @@ def write_cache(table, user_id: str, recommendations: List[Dict], ttl_seconds: i
         "user_id": user_id,
         "created_at": now,
         "ttl": ttl,
-        "recommendations": recommendations,
+        "recommendations": _to_dynamodb_safe(recommendations),
     }
     table.put_item(Item=cache_item)
     return cache_item
@@ -148,7 +251,7 @@ def handler(event, context):
         return {
             "status": "ok",
             "user_id": user_id,
-            "recommendations": recs,
+            "recommendations": _to_json_safe(recs),
             "cache_ttl": cache_item["ttl"],
         }
 

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { submitOnboarding, startRecommendationJob } from "../api/apiClient";
+import "../styles/Onboarding.css";
 
 const GENRES = [
   "Action",
@@ -10,25 +12,31 @@ const GENRES = [
   "Sci-Fi",
   "Fantasy",
   "Slice of Life",
-  "Thriller",
   "Mystery",
+  "Thriller",
+  "Horror",
+  "Sports",
 ];
 
 const STUDIOS = [
-  "Studio A",
-  "Studio B",
-  "Studio C",
   "MAPPA",
   "Bones",
   "A-1 Pictures",
+  "Wit Studio",
+  "Ufotable",
+  "Kyoto Animation",
+  "Madhouse",
+  "Production I.G",
 ];
 
 export default function Onboarding() {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState("demo-user");
   const [genres, setGenres] = useState([]);
   const [studios, setStudios] = useState([]);
   const [preferPopular, setPreferPopular] = useState(true);
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleSelection = (value, current, setCurrent) => {
     if (current.includes(value)) {
@@ -40,7 +48,8 @@ export default function Onboarding() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("Submitting onboarding...");
+    setIsSubmitting(true);
+    setStatus("Submitting your preferences...");
     try {
       const prefs = {
         genres,
@@ -52,64 +61,98 @@ export default function Onboarding() {
         opt_in_popularity: preferPopular,
         top_n: 20,
       });
-      setStatus("Onboarding submitted. Recommendation job started.");
+      setStatus("Success! Generating your recommendations...");
+      setTimeout(() => navigate("/recommendations"), 2000);
     } catch (err) {
       setStatus("Error: " + err.message);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>Onboarding</h2>
-      <p>Select your favorite genres and studios, then start recommendations.</p>
+    <div className="onboarding-container">
+      <div className="onboarding-card">
+        <div className="onboarding-header">
+          <h1 className="onboarding-title">Tell Us Your Preferences</h1>
+          <p className="onboarding-description">
+            Select your favorite genres and studios to get personalized anime recommendations
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit}>
-        <label>User ID</label>
-        <input
-          type="text"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        />
-
-        <h4>Genres</h4>
-        {GENRES.map((g) => (
-          <label key={g} style={{ display: "block" }}>
+        <form onSubmit={handleSubmit}>
+          <div className="form-section user-id-input">
+            <label className="form-label">Your User ID</label>
             <input
-              type="checkbox"
-              checked={genres.includes(g)}
-              onChange={() => toggleSelection(g, genres, setGenres)}
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              required
             />
-            {g}
-          </label>
-        ))}
+          </div>
 
-        <h4>Studios</h4>
-        {STUDIOS.map((s) => (
-          <label key={s} style={{ display: "block" }}>
-            <input
-              type="checkbox"
-              checked={studios.includes(s)}
-              onChange={() => toggleSelection(s, studios, setStudios)}
-            />
-            {s}
-          </label>
-        ))}
+          <div className="form-section">
+            <label className="form-label">Favorite Genres</label>
+            <div className="selection-grid">
+              {GENRES.map((g) => (
+                <div key={g} className="selection-item">
+                  <input
+                    type="checkbox"
+                    id={`genre-${g}`}
+                    checked={genres.includes(g)}
+                    onChange={() => toggleSelection(g, genres, setGenres)}
+                  />
+                  <label htmlFor={`genre-${g}`}>{g}</label>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <label style={{ display: "block", marginTop: "1rem" }}>
-          <input
-            type="checkbox"
-            checked={preferPopular}
-            onChange={(e) => setPreferPopular(e.target.checked)}
-          />
-          Include popular anime in recommendations
-        </label>
+          <div className="form-section">
+            <label className="form-label">Favorite Studios</label>
+            <div className="selection-grid">
+              {STUDIOS.map((s) => (
+                <div key={s} className="selection-item">
+                  <input
+                    type="checkbox"
+                    id={`studio-${s}`}
+                    checked={studios.includes(s)}
+                    onChange={() => toggleSelection(s, studios, setStudios)}
+                  />
+                  <label htmlFor={`studio-${s}`}>{s}</label>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <button type="submit" style={{ marginTop: "1rem" }}>
-          Start Recommendations
-        </button>
-      </form>
+          <div className="form-section">
+            <div className="preference-toggle">
+              <input
+                type="checkbox"
+                id="prefer-popular"
+                checked={preferPopular}
+                onChange={(e) => setPreferPopular(e.target.checked)}
+              />
+              <label htmlFor="prefer-popular" className="preference-label">
+                Include popularity in recommendations
+              </label>
+            </div>
+          </div>
 
-      {status && <p>{status}</p>}
+          <div className="submit-section">
+            <button type="submit" className="submit-button" disabled={isSubmitting}>
+              {isSubmitting ? "Generating Recommendations..." : "Get My Recommendations"}
+            </button>
+            {status && (
+              <div className={`status-message ${
+                status.includes("Error") ? "error" : 
+                status.includes("Success") ? "success" : "info"
+              }`}>
+                {status}
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
