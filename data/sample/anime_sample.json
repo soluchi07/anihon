@@ -1,0 +1,22 @@
+[
+  {
+    "animeId": "101",
+    "title": "Example Hero",
+    "type": "TV",
+    "genres": ["Action", "Adventure"],
+    "alternate_titles": ["Example Hero: Origins"],
+    "score": 8.0,
+    "popularity": 50,
+    "image_url": "https://cdn.jikan.moe/images/anime/101.jpg"
+  },
+  {
+    "animeId": "102",
+    "title": "Gentle Story",
+    "type": "TV",
+    "genres": ["Drama"],
+    "alternate_titles": ["Gentle Story"],
+    "score": null,
+    "popularity": 500,
+    "image_url": "https://cdn.jikan.moe/images/anime/102.jpg"
+  }
+]

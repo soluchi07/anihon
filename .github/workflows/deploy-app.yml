@@ -1,0 +1,23 @@
+name: Deploy App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Upload to S3 (stub)
+        run: echo "Upload build to S3 and invalidate CloudFront (configure in implementation)"
+      - name: Deploy lambdas (stub)
+        run: echo "Package and update each lambda via Terraform/S3"

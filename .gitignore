@@ -1,1 +1,19 @@
 plan.txt
+proposal.pdf
+# Do not commit large raw or cleaned datasets
+data/anime_meta_cleaned*.jsonl
+data/cleaned/
+data/anime_meta.json
+
+# Keep scripts and sample data committed
+!data/prep_anime.py
+!data/sample/
+
+# Local env and build artifacts
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+checklist.md
