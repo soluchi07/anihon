@@ -17,3 +17,6 @@ __pycache__/
 build/
 dist/
 checklist.md
+
+# node modules
+frontend/node_modules/
