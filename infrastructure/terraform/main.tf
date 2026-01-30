@@ -428,7 +428,8 @@ locals {
   onboarding_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.onboarding_lambda.lambda_arn}/invocations"
   recommendations_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.recommendation_api_lambda.lambda_arn}/invocations"
   
-  # CORS origin: use frontend domain if set, otherwise allow localhost for development
-  cors_origin = var.frontend_domain != "" ? var.frontend_domain : "'http://localhost:3000 http://localhost:3001'"
+  # CORS origin: wrap in single quotes for API Gateway mapping expression
+  # Use frontend domain if set, otherwise allow localhost for development
+  cors_origin = "'${var.frontend_domain != "" ? var.frontend_domain : "http://localhost:3000 http://localhost:3001"}'"
 }
 

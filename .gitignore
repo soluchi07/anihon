@@ -18,6 +18,8 @@ build/
 dist/
 .env
 checklist.md
+plan.md
+project_chat.json
 
 # node modules
 frontend/node_modules/
