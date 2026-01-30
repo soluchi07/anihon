@@ -1,12 +1,20 @@
-# Terraform backend configuration (stub)
-# This file should be filled with your remote S3 backend and DynamoDB lock table configuration.
+# Terraform backend configuration
+# Using local backend for development
+# TODO: Migrate to S3 backend once AWS credentials are configured
 
 terraform {
   required_version = ">= 1.3.0"
-  backend "s3" {
-    bucket = "anime-rec-terraform-state"
-    key    = "state/terraform.tfstate"
-    region = "na-east"
-    dynamodb_table = "anime-rec-terraform-lock"
+  
+  # Local backend for now
+  backend "local" {
+    path = "terraform.tfstate"
   }
+  
+  # Uncomment and configure when ready for remote state:
+  # backend "s3" {
+  #   bucket         = "anime-rec-terraform-state"
+  #   key            = "state/terraform.tfstate"
+  #   region         = "us-east-1"
+  #   dynamodb_table = "anime-rec-terraform-lock"
+  # }
 }

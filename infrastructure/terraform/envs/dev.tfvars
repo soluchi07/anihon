@@ -1,4 +1,4 @@
-aws_region = "na-east"
+aws_region = "us-east-1"
 project_name = "animerec-dev"
 s3_frontend_bucket = "animerec-frontend-dev"
 s3_data_bucket = "animerec-data-dev"

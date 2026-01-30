@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "na-east"
+  region = "us-east-1"
   # profile can be set via TF_VAR_aws_profile or environment variables in CI
 }
 
