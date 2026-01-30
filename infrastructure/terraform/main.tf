@@ -180,9 +180,13 @@ resource "aws_iam_role_policy" "data_ingest_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:GetObject"
+          "s3:GetObject",
+          "s3:ListBucket"
         ]
-        Resource = "${aws_s3_bucket.data_bucket.arn}/*"
+        Resource = [
+          aws_s3_bucket.data_bucket.arn,
+          "${aws_s3_bucket.data_bucket.arn}/*"
+        ]
       },
       {
         Effect = "Allow"
@@ -222,6 +226,13 @@ resource "aws_api_gateway_method" "onboarding_post" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_method" "onboarding_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.onboarding_user.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
 resource "aws_api_gateway_integration" "onboarding_post" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.onboarding_user.id
@@ -229,6 +240,42 @@ resource "aws_api_gateway_integration" "onboarding_post" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = local.onboarding_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "onboarding_options" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.onboarding_user.id
+  http_method             = aws_api_gateway_method.onboarding_options.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "onboarding_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.onboarding_user.id
+  http_method = aws_api_gateway_method.onboarding_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "onboarding_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.onboarding_user.id
+  http_method = aws_api_gateway_method.onboarding_options.http_method
+  status_code = aws_api_gateway_method_response.onboarding_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
 }
 
 // /recommendations
@@ -258,6 +305,13 @@ resource "aws_api_gateway_method" "recommendations_post" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_method" "recommendations_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.recommendations_user.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
 resource "aws_api_gateway_integration" "recommendations_get" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.recommendations_user.id
@@ -274,6 +328,42 @@ resource "aws_api_gateway_integration" "recommendations_post" {
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = local.recommendations_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "recommendations_options" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.recommendations_user.id
+  http_method             = aws_api_gateway_method.recommendations_options.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "recommendations_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.recommendations_user.id
+  http_method = aws_api_gateway_method.recommendations_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "recommendations_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.recommendations_user.id
+  http_method = aws_api_gateway_method.recommendations_options.http_method
+  status_code = aws_api_gateway_method_response.recommendations_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
 }
 
 // Lambda permissions for API Gateway
@@ -309,10 +399,16 @@ resource "aws_api_gateway_deployment" "api_deployment" {
     redeployment = timestamp()
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   depends_on = [
     aws_api_gateway_integration.onboarding_post,
+    aws_api_gateway_integration.onboarding_options,
     aws_api_gateway_integration.recommendations_get,
     aws_api_gateway_integration.recommendations_post,
+    aws_api_gateway_integration.recommendations_options,
   ]
 }
 

@@ -12,7 +12,7 @@ resource "aws_dynamodb_table" "anime" {
   }
 
   attribute {
-    name = "genres"
+    name = "genre"
     type = "S"
   }
 
@@ -21,10 +21,10 @@ resource "aws_dynamodb_table" "anime" {
     type = "N"
   }
 
-  // GSI: query by genre
+  // GSI: query by genre (single-valued)
   global_secondary_index {
     name            = "genre-index"
-    hash_key        = "genres"
+    hash_key        = "genre"
     projection_type = "KEYS_ONLY"
   }
 
