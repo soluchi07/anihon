@@ -203,7 +203,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
 ## Contact & Support
 
-For questions or issues, refer to the project plan in [plan.md](plan.md) and deployment guide in [DEPLOYMENT.md](DEPLOYMENT.md).
+For questions or issues, refer to the deployment guide in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
