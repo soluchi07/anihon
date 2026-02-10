@@ -15,20 +15,6 @@ resource "aws_cognito_user_pool" "main" {
   auto_verified_attributes = ["email"]
   username_attributes      = ["email"]
 
-  # Schema attributes
-  schema {
-    name              = "email"
-    attribute_data_type = "String"
-    required          = true
-    mutable           = false
-  }
-
-  schema {
-    name              = "name"
-    attribute_data_type = "String"
-    mutable           = true
-  }
-
   # Account recovery
   account_recovery_setting {
     recovery_mechanism {
@@ -40,6 +26,12 @@ resource "aws_cognito_user_pool" "main" {
   # Email configuration (using default Cognito email)
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      schema
+    ]
   }
 
   tags = var.tags
@@ -72,6 +64,7 @@ resource "aws_cognito_user_pool_client" "main" {
 
   # Allow basic cognito auth
   explicit_auth_flows = [
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
     "ALLOW_USER_PASSWORD_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_CUSTOM_AUTH"
@@ -93,9 +86,8 @@ resource "aws_cognito_identity_pool" "main" {
   allow_unauthenticated_identities = false
 
   cognito_identity_providers {
-    client_id              = aws_cognito_user_pool_client.main.id
-    provider_name          = aws_cognito_user_pool.main.endpoint
-    server_side_token_validation = false
+    client_id     = aws_cognito_user_pool_client.main.id
+    provider_name = aws_cognito_user_pool.main.endpoint
   }
 
   tags = var.tags

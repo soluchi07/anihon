@@ -23,11 +23,6 @@ output "cognito_domain" {
   value       = aws_cognito_user_pool_domain.main.domain
 }
 
-output "cognito_domain_aws_name" {
-  description = "Cognito domain AWS name (FQDN)"
-  value       = aws_cognito_user_pool_domain.main.cloudfront_domain_name
-}
-
 output "identity_pool_id" {
   description = "Cognito Identity Pool ID"
   value       = aws_cognito_identity_pool.main.id

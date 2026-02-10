@@ -35,6 +35,45 @@ module "onboarding_lambda" {
   }
 }
 
+// Auth Lambda
+module "auth_lambda" {
+  source = "./modules/lambda"
+
+  project_name      = var.project_name
+  function_name     = "auth"
+  source_code_path  = "${path.module}/../../backend/lambdas/auth/handler.py"
+  handler           = "handler.handler"
+  runtime           = "python3.10"
+  timeout           = 30
+  memory_size       = 256
+  tags              = local.common_tags
+
+  environment_vars = {
+    COGNITO_USER_POOL_ID = module.cognito.user_pool_id
+    COGNITO_CLIENT_ID    = module.cognito.user_pool_client_id
+  }
+}
+
+resource "aws_iam_role_policy" "auth_policy" {
+  name = "${var.project_name}-auth-policy"
+  role = module.auth_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:AdminConfirmSignUp",
+          "cognito-idp:AdminInitiateAuth"
+        ]
+        Resource = module.cognito.user_pool_arn
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "onboarding_policy" {
   name = "${var.project_name}-onboarding-policy"
   role = module.onboarding_lambda.role_id
@@ -233,6 +272,143 @@ resource "aws_api_gateway_resource" "onboarding" {
   path_part   = "onboarding"
 }
 
+// /auth
+resource "aws_api_gateway_resource" "auth" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "auth"
+}
+
+resource "aws_api_gateway_resource" "auth_signup" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "signup"
+}
+
+resource "aws_api_gateway_resource" "auth_login" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.auth.id
+  path_part   = "login"
+}
+
+resource "aws_api_gateway_method" "auth_signup_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.auth_signup.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "auth_login_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.auth_login.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "auth_signup_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.auth_signup.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "auth_login_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.auth_login.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "auth_signup_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.auth_signup.id
+  http_method             = aws_api_gateway_method.auth_signup_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.auth_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "auth_login_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.auth_login.id
+  http_method             = aws_api_gateway_method.auth_login_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.auth_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "auth_signup_options" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.auth_signup.id
+  http_method             = aws_api_gateway_method.auth_signup_options.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_integration" "auth_login_options" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.auth_login.id
+  http_method             = aws_api_gateway_method.auth_login_options.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "auth_signup_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_method_response" "auth_login_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "auth_signup_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  status_code = aws_api_gateway_method_response.auth_signup_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_api_gateway_integration_response" "auth_login_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  status_code = aws_api_gateway_method_response.auth_login_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
 resource "aws_api_gateway_resource" "onboarding_user" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_resource.onboarding.id
@@ -407,6 +583,22 @@ resource "aws_lambda_permission" "onboarding_api" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/onboarding/*"
 }
 
+resource "aws_lambda_permission" "auth_signup_api" {
+  statement_id  = "AllowAPIGatewayInvokeAuthSignup"
+  action        = "lambda:InvokeFunction"
+  function_name = module.auth_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/auth/signup"
+}
+
+resource "aws_lambda_permission" "auth_login_api" {
+  statement_id  = "AllowAPIGatewayInvokeAuthLogin"
+  action        = "lambda:InvokeFunction"
+  function_name = module.auth_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/auth/login"
+}
+
 resource "aws_lambda_permission" "recommendations_api_get" {
   statement_id  = "AllowAPIGatewayInvokeRecommendationsGet"
   action        = "lambda:InvokeFunction"
@@ -438,6 +630,10 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   depends_on = [
     aws_api_gateway_integration.onboarding_post,
     aws_api_gateway_integration.onboarding_options,
+    aws_api_gateway_integration.auth_signup_post,
+    aws_api_gateway_integration.auth_login_post,
+    aws_api_gateway_integration.auth_signup_options,
+    aws_api_gateway_integration.auth_login_options,
     aws_api_gateway_integration.recommendations_get,
     aws_api_gateway_integration.recommendations_post,
     aws_api_gateway_integration.recommendations_options,
@@ -458,6 +654,7 @@ locals {
   })
 
   onboarding_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.onboarding_lambda.lambda_arn}/invocations"
+  auth_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.auth_lambda.lambda_arn}/invocations"
   recommendations_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.recommendation_api_lambda.lambda_arn}/invocations"
   
   # CORS origin: wrap in single quotes for API Gateway mapping expression
