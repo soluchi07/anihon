@@ -28,3 +28,32 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "cognito_domain" {
+  description = "Cognito domain (must be globally unique)"
+  type        = string
+  default     = "animerec-auth"
+}
+
+variable "callback_urls" {
+  description = "OAuth2 callback URLs for Cognito"
+  type        = list(string)
+  default = [
+    "http://localhost:3001/callback",
+    "http://localhost:3000/callback",
+    "http://localhost:3001",
+    "http://localhost:3000"
+  ]
+}
+
+variable "logout_urls" {
+  description = "OAuth2 logout URLs for Cognito"
+  type        = list(string)
+  default = [
+    "http://localhost:3001/logout",
+    "http://localhost:3000/logout",
+    "http://localhost:3001",
+    "http://localhost:3000"
+  ]
+}
+

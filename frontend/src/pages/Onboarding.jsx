@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { submitOnboarding, startRecommendationJob } from "../api/apiClient";
 import "../styles/Onboarding.css";
 
@@ -31,7 +32,7 @@ const STUDIOS = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState("demo-user");
+  const { user } = useAuth();
   const [genres, setGenres] = useState([]);
   const [studios, setStudios] = useState([]);
   const [preferPopular, setPreferPopular] = useState(true);
@@ -56,8 +57,8 @@ export default function Onboarding() {
         studios,
         opt_in_popularity: preferPopular,
       };
-      await submitOnboarding(userId, prefs);
-      await startRecommendationJob(userId, {
+      await submitOnboarding(user.userId, prefs);
+      await startRecommendationJob(user.userId, {
         opt_in_popularity: preferPopular,
         top_n: 20,
       });

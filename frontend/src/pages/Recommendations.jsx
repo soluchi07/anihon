@@ -1,17 +1,18 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import usePolling from "../components/PollingHook";
 import AnimeCard from "../components/AnimeCard";
 import { fetchRecommendations } from "../api/apiClient";
 import "../styles/Recommendations.css";
 
 export default function Recommendations() {
-  const [userId, setUserId] = useState("demo-user");
+  const { user } = useAuth();
 
   const fetchFn = useCallback(async () => {
-    const res = await fetchRecommendations(userId);
+    const res = await fetchRecommendations(user.userId);
     return res.recommendations || [];
-  }, [userId]);
+  }, [user.userId]);
 
   const { data, loading } = usePolling(fetchFn, 3000);
 
@@ -19,15 +20,6 @@ export default function Recommendations() {
     <div className="recommendations-container">
       <div className="recommendations-header">
         <h1 className="recommendations-title">Your Anime Recommendations</h1>
-        <div className="user-input-section">
-          <label>User ID:</label>
-          <input
-            type="text"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="Enter your user ID"
-          />
-        </div>
         {data && data.length > 0 && (
           <div className="recommendations-count">
             📊 {data.length} recommendations found

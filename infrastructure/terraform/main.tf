@@ -1,3 +1,14 @@
+// Cognito module for authentication
+module "cognito" {
+  source = "./modules/cognito"
+
+  project_name   = var.project_name
+  cognito_domain = var.cognito_domain
+  callback_urls  = var.callback_urls
+  logout_urls    = var.logout_urls
+  tags           = local.common_tags
+}
+
 // DynamoDB module
 module "dynamodb" {
   source = "./modules/dynamodb"
@@ -206,6 +217,15 @@ resource "aws_api_gateway_rest_api" "api" {
   name = "${var.project_name}-api"
 }
 
+// Cognito Authorizer for API Gateway
+resource "aws_api_gateway_authorizer" "cognito" {
+  name          = "${var.project_name}-cognito-auth"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  type          = "COGNITO_USER_POOLS"
+  provider_arns = [module.cognito.user_pool_arn]
+  identity_source = "method.request.header.Authorization"
+}
+
 // /onboarding
 resource "aws_api_gateway_resource" "onboarding" {
   rest_api_id = aws_api_gateway_rest_api.api.id
@@ -220,10 +240,14 @@ resource "aws_api_gateway_resource" "onboarding_user" {
 }
 
 resource "aws_api_gateway_method" "onboarding_post" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.onboarding_user.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.onboarding_user.id
+  http_method             = "POST"
+  authorization           = "COGNITO_USER_POOLS"
+  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
 }
 
 resource "aws_api_gateway_method" "onboarding_options" {
@@ -292,17 +316,25 @@ resource "aws_api_gateway_resource" "recommendations_user" {
 }
 
 resource "aws_api_gateway_method" "recommendations_get" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.recommendations_user.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.recommendations_user.id
+  http_method             = "GET"
+  authorization           = "COGNITO_USER_POOLS"
+  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
 }
 
 resource "aws_api_gateway_method" "recommendations_post" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.recommendations_user.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.recommendations_user.id
+  http_method             = "POST"
+  authorization           = "COGNITO_USER_POOLS"
+  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
 }
 
 resource "aws_api_gateway_method" "recommendations_options" {

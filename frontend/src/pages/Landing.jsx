@@ -1,8 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/Landing.css";
 
 export default function Landing() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="landing-container">
       <div className="landing-content">
@@ -36,12 +39,25 @@ export default function Landing() {
         </div>
 
         <div className="landing-cta">
-          <Link to="/onboarding" className="cta-primary">
-            Get Started
-          </Link>
-          <Link to="/recommendations" className="cta-secondary">
-            View Recommendations
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/onboarding" className="cta-primary">
+                Get Started
+              </Link>
+              <Link to="/recommendations" className="cta-secondary">
+                View Recommendations
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/signup" className="cta-primary">
+                Sign Up Free
+              </Link>
+              <Link to="/login" className="cta-secondary">
+                Log In
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
