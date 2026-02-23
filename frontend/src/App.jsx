@@ -6,6 +6,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Recommendations from "./pages/Recommendations";
+import AnimeProfile from "./pages/AnimeProfile";
+import MyLists from "./pages/MyLists";
 import "./styles/App.css";
 
 function ProtectedRoute({ children }) {
@@ -37,6 +39,7 @@ function Navbar() {
             <>
               <Link to="/onboarding">Get Started</Link>
               <Link to="/recommendations">Recommendations</Link>
+              <Link to="/lists">My Lists</Link>
               <span className="navbar-user">{user?.email || "User"}</span>
               <button
                 onClick={logout}
@@ -74,6 +77,7 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/anime/:id" element={<AnimeProfile />} />
             <Route
               path="/onboarding"
               element={
@@ -87,6 +91,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Recommendations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lists"
+              element={
+                <ProtectedRoute>
+                  <MyLists />
                 </ProtectedRoute>
               }
             />

@@ -51,3 +51,79 @@ export async function likeAnime(userId, animeId) {
   if (!res.ok) throw new Error("Failed to record interaction");
   return res.json();
 }
+
+// Fetch single anime details (public, no auth required)
+export async function fetchAnimeDetails(animeId) {
+  const res = await fetch(`${API_BASE}/anime/${animeId}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch anime details");
+  return res.json();
+}
+
+// Fetch similar anime (public, no auth required)
+export async function fetchSimilarAnime(animeId) {
+  const res = await fetch(`${API_BASE}/anime/${animeId}/similar`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) throw new Error("Failed to fetch similar anime");
+  return res.json();
+}
+
+// Fetch all user interactions (ratings, likes)
+export async function fetchUserInteractions(userId) {
+  const res = await fetch(`${API_BASE}/interactions/${userId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch user interactions");
+  return res.json();
+}
+
+// Rate an anime (1-10 scale)
+export async function rateAnime(userId, animeId, rating) {
+  const res = await fetch(`${API_BASE}/interactions/${userId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ anime_id: animeId, rating: rating }),
+  });
+  if (!res.ok) throw new Error("Failed to rate anime");
+  return res.json();
+}
+
+// Add anime to a list
+export async function addToList(userId, animeId, listType) {
+  const res = await fetch(`${API_BASE}/lists/${userId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ anime_id: animeId, list_type: listType }),
+  });
+  if (!res.ok) throw new Error("Failed to add to list");
+  return res.json();
+}
+
+// Remove anime from a list
+export async function removeFromList(userId, animeId, listType) {
+  const compositeKey = `${listType}%23${animeId}`;
+  const res = await fetch(`${API_BASE}/lists/${userId}/${compositeKey}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to remove from list");
+  return res.json();
+}
+
+// Fetch user lists (all or filtered by type)
+export async function fetchUserLists(userId, listType = null) {
+  const url = listType 
+    ? `${API_BASE}/lists/${userId}?list_type=${listType}`
+    : `${API_BASE}/lists/${userId}`;
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch user lists");
+  return res.json();
+}

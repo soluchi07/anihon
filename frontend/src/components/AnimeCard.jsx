@@ -1,7 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import RatingInput from './RatingInput';
+import ListSelector from './ListSelector';
 import '../styles/AnimeCard.css';
 
-export default function AnimeCard({ anime, liked, onLike }) {
+export default function AnimeCard({ anime, liked, onLike, rating, onRate, currentList, onListChange }) {
+  const navigate = useNavigate();
   const score = anime.score != null ? Number(anime.score).toFixed(2) : 'N/A';
   const popularity = anime.popularity_score != null ? Number(anime.popularity_score).toFixed(0) : 'N/A';
   
@@ -13,8 +17,31 @@ export default function AnimeCard({ anime, liked, onLike }) {
     return 'low';
   };
 
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking interactive elements
+    if (e.target.closest('.like-button') || 
+        e.target.closest('.rating-input') ||
+        e.target.closest('.rating-stars') ||
+        e.target.closest('.list-selector')) {
+      return;
+    }
+    navigate(`/anime/${anime.anime_id}`);
+  };
+
+  const handleRate = (newRating) => {
+    if (onRate) {
+      onRate(anime.anime_id, newRating);
+    }
+  };
+
+  const handleListChange = (listType) => {
+    if (onListChange) {
+      onListChange(anime.anime_id, listType);
+    }
+  };
+
   return (
-    <div className="anime-card">
+    <div className="anime-card" onClick={handleCardClick}>
       <div className="anime-card-image-container">
         {anime.image_url ? (
           <img 
@@ -59,10 +86,32 @@ export default function AnimeCard({ anime, liked, onLike }) {
           </div>
         </div>
 
+        {onRate && (
+          <div className="anime-card-rating" onClick={(e) => e.stopPropagation()}>
+            <span className="rating-label">Your Rating:</span>
+            <RatingInput 
+              currentRating={rating || 0} 
+              onRate={handleRate}
+            />
+          </div>
+        )}
+
+        {onListChange && (
+          <div className="anime-card-list" onClick={(e) => e.stopPropagation()}>
+            <ListSelector 
+              currentList={currentList || null}
+              onListChange={handleListChange}
+            />
+          </div>
+        )}
+
         {onLike && (
           <button
             className={`like-button ${liked ? 'liked' : ''}`}
-            onClick={() => onLike(anime.anime_id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLike(anime.anime_id);
+            }}
             aria-label={liked ? 'Unlike' : 'Like'}
           >
             {liked ? '❤️ Liked' : '🤍 Like'}

@@ -1,0 +1,134 @@
+.list-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.list-selector-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.list-selector-button:hover:not(:disabled) {
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.list-selector-button.has-list {
+  border-width: 2px;
+}
+
+.list-selector-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-to-list-text {
+  color: #666;
+}
+
+.dropdown-arrow {
+  color: #999;
+  font-size: 0.7rem;
+}
+
+.list-selector-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  min-width: 200px;
+}
+
+.list-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: none;
+  border-left: 3px solid transparent;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.list-option:hover {
+  background: #f8f9fa;
+}
+
+.list-option.selected {
+  background: #f0f0ff;
+  font-weight: 600;
+}
+
+.list-option-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 0.25rem 0;
+}
+
+.remove-option {
+  color: #dc3545;
+}
+
+.remove-option:hover {
+  background: #fff5f5;
+}
+
+.checkmark {
+  color: #28a745;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.list-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.list-selector.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .list-selector-button {
+    min-width: 130px;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .list-selector-dropdown {
+    min-width: 180px;
+  }
+
+  .list-option {
+    font-size: 0.85rem;
+    padding: 0.65rem 0.8rem;
+  }
+}

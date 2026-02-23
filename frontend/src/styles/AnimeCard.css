@@ -137,6 +137,36 @@
   font-size: 3rem;
 }
 
+.anime-card-rating {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rating-label {
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.anime-card-rating .rating-input {
+  justify-content: flex-start;
+}
+
+.anime-card-rating .star {
+  font-size: 1rem;
+}
+
+.anime-card-list {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f0f0f0;
+}
+
 .like-button {
   width: 100%;
   margin-top: 0.75rem;
