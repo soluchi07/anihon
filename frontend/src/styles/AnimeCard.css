@@ -137,6 +137,30 @@
   font-size: 3rem;
 }
 
+.like-button {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  background: transparent;
+  color: #667eea;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.like-button:hover {
+  background: #667eea;
+  color: white;
+}
+
+.like-button.liked {
+  background: #667eea;
+  color: white;
+}
+
 @media (max-width: 768px) {
   .anime-card-content {
     padding: 1rem;

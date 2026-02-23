@@ -41,3 +41,13 @@ export async function submitOnboarding(userId, prefs) {
   if (!res.ok) throw new Error("Failed to submit onboarding");
   return res.json();
 }
+
+export async function likeAnime(userId, animeId) {
+  const res = await fetch(`${API_BASE}/interactions/${userId}`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ anime_id: animeId, liked: true }),
+  });
+  if (!res.ok) throw new Error("Failed to record interaction");
+  return res.json();
+}

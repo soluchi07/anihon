@@ -104,7 +104,7 @@ def test_read_jsonl_from_s3_s3_error():
 
 def test_batch_write_to_dynamodb_success(sample_jsonl):
     """Test batch write to DynamoDB."""
-    mock_table = Mock()
+    mock_table = MagicMock()
     mock_writer = MagicMock()
     mock_table.batch_writer.return_value.__enter__.return_value = mock_writer
 
@@ -116,7 +116,7 @@ def test_batch_write_to_dynamodb_success(sample_jsonl):
 
 def test_batch_write_to_dynamodb_partial_failure(sample_jsonl):
     """Test batch write with partial failures."""
-    mock_table = Mock()
+    mock_table = MagicMock()
     mock_writer = MagicMock()
 
     # Simulate failure on second item
@@ -141,7 +141,7 @@ def test_handler_success(sample_jsonl):
     mock_s3.get_object.return_value = {"Body": mock_body}
 
     mock_dynamodb = Mock()
-    mock_table = Mock()
+    mock_table = MagicMock()
     mock_writer = MagicMock()
     mock_dynamodb.Table.return_value = mock_table
     mock_table.batch_writer.return_value.__enter__.return_value = mock_writer

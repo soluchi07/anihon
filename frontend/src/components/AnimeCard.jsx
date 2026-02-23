@@ -1,7 +1,7 @@
 import React from 'react';
 import '../styles/AnimeCard.css';
 
-export default function AnimeCard({ anime }) {
+export default function AnimeCard({ anime, liked, onLike }) {
   const score = anime.score != null ? Number(anime.score).toFixed(2) : 'N/A';
   const popularity = anime.popularity_score != null ? Number(anime.popularity_score).toFixed(0) : 'N/A';
   
@@ -58,6 +58,16 @@ export default function AnimeCard({ anime }) {
             </span>
           </div>
         </div>
+
+        {onLike && (
+          <button
+            className={`like-button ${liked ? 'liked' : ''}`}
+            onClick={() => onLike(anime.anime_id)}
+            aria-label={liked ? 'Unlike' : 'Like'}
+          >
+            {liked ? '❤️ Liked' : '🤍 Like'}
+          </button>
+        )}
       </div>
     </div>
   );

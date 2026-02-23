@@ -26,4 +26,17 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          npm test --silent || true
+          npm test --silent
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps
+      - name: Run Playwright E2E tests
+        working-directory: frontend
+        env:
+          E2E_TESTS: "1"
+          E2E_BASE_URL: "http://localhost:3001"
+          CI: "true"
+          PORT: "3001"
+        run: |
+          npm run test:e2e

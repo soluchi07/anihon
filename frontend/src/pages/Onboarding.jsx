@@ -81,16 +81,6 @@ export default function Onboarding() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-section user-id-input">
-            <label className="form-label">Your User ID</label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              required
-            />
-          </div>
-
           <div className="form-section">
             <label className="form-label">Favorite Genres</label>
             <div className="selection-grid">

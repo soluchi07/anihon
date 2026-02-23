@@ -637,6 +637,13 @@ resource "aws_api_gateway_deployment" "api_deployment" {
     aws_api_gateway_integration.recommendations_get,
     aws_api_gateway_integration.recommendations_post,
     aws_api_gateway_integration.recommendations_options,
+    aws_api_gateway_integration.anime_getter_get,
+    aws_api_gateway_integration.anime_getter_options,
+    aws_api_gateway_integration.anime_getter_id_get,
+    aws_api_gateway_integration.anime_getter_id_options,
+    aws_api_gateway_integration.interactions_get,
+    aws_api_gateway_integration.interactions_post,
+    aws_api_gateway_integration.interactions_options,
   ]
 }
 
@@ -658,7 +665,350 @@ locals {
   recommendations_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.recommendation_api_lambda.lambda_arn}/invocations"
   
   # CORS origin: wrap in single quotes for API Gateway mapping expression
-  # Use frontend domain if set, otherwise allow localhost for development
-  cors_origin = "'${var.frontend_domain != "" ? var.frontend_domain : "http://localhost:3000 http://localhost:3001"}'"
+  # Use '*' to allow all origins for development (change to specific domain for production)
+  cors_origin = var.frontend_domain != "" ? "'${var.frontend_domain}'" : "'*'"
+
+  anime_getter_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.anime_getter_lambda.lambda_arn}/invocations"
+  interactions_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.interactions_lambda.lambda_arn}/invocations"
 }
 
+// ── Anime Getter Lambda ────────────────────────────────────────────────────
+
+module "anime_getter_lambda" {
+  source = "./modules/lambda"
+
+  project_name     = var.project_name
+  function_name    = "anime-getter"
+  source_code_path = "${path.module}/../../backend/lambdas/anime_getter/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
+
+  environment_vars = {
+    ANIME_TABLE = module.dynamodb.anime_table_name
+  }
+}
+
+resource "aws_iam_role_policy" "anime_getter_policy" {
+  name = "${var.project_name}-anime-getter-policy"
+  role = module.anime_getter_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:BatchGetItem"
+        ]
+        Resource = [
+          module.dynamodb.anime_table_arn,
+          "${module.dynamodb.anime_table_arn}/index/*"
+        ]
+      }
+    ]
+  })
+}
+
+// /anime (parent resource — handles GET?genre=X)
+resource "aws_api_gateway_resource" "anime" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "anime"
+}
+
+// /anime/{animeId}
+resource "aws_api_gateway_resource" "anime_id" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.anime.id
+  path_part   = "{animeId}"
+}
+
+resource "aws_api_gateway_method" "anime_getter_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "anime_getter_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "anime_getter_id_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime_id.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "anime_getter_id_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "anime_getter_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.anime.id
+  http_method             = aws_api_gateway_method.anime_getter_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.anime_getter_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "anime_getter_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime.id
+  http_method = aws_api_gateway_method.anime_getter_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "anime_getter_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime.id
+  http_method = aws_api_gateway_method.anime_getter_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "anime_getter_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime.id
+  http_method = aws_api_gateway_method.anime_getter_options.http_method
+  status_code = aws_api_gateway_method_response.anime_getter_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_api_gateway_integration" "anime_getter_id_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.anime_id.id
+  http_method             = aws_api_gateway_method.anime_getter_id_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.anime_getter_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "anime_getter_id_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_id.id
+  http_method = aws_api_gateway_method.anime_getter_id_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "anime_getter_id_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_id.id
+  http_method = aws_api_gateway_method.anime_getter_id_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "anime_getter_id_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_id.id
+  http_method = aws_api_gateway_method.anime_getter_id_options.http_method
+  status_code = aws_api_gateway_method_response.anime_getter_id_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_lambda_permission" "anime_getter_api" {
+  statement_id  = "AllowAPIGatewayInvokeAnimeGetter"
+  action        = "lambda:InvokeFunction"
+  function_name = module.anime_getter_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/GET/anime*"
+}
+
+// ── Interactions Lambda ────────────────────────────────────────────────────
+
+module "interactions_lambda" {
+  source = "./modules/lambda"
+
+  project_name     = var.project_name
+  function_name    = "interactions"
+  source_code_path = "${path.module}/../../backend/lambdas/interactions/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
+
+  environment_vars = {
+    INTERACTIONS_TABLE = module.dynamodb.interactions_table_name
+  }
+}
+
+resource "aws_iam_role_policy" "interactions_policy" {
+  name = "${var.project_name}-interactions-policy"
+  role = module.interactions_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:Query"
+        ]
+        Resource = module.dynamodb.interactions_table_arn
+      }
+    ]
+  })
+}
+
+// /interactions
+resource "aws_api_gateway_resource" "interactions" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "interactions"
+}
+
+// /interactions/{userId}
+resource "aws_api_gateway_resource" "interactions_user" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.interactions.id
+  path_part   = "{userId}"
+}
+
+resource "aws_api_gateway_method" "interactions_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.interactions_user.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "interactions_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.interactions_user.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "interactions_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.interactions_user.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "interactions_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.interactions_user.id
+  http_method             = aws_api_gateway_method.interactions_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.interactions_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "interactions_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.interactions_user.id
+  http_method             = aws_api_gateway_method.interactions_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.interactions_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "interactions_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.interactions_user.id
+  http_method = aws_api_gateway_method.interactions_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "interactions_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.interactions_user.id
+  http_method = aws_api_gateway_method.interactions_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "interactions_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.interactions_user.id
+  http_method = aws_api_gateway_method.interactions_options.http_method
+  status_code = aws_api_gateway_method_response.interactions_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_lambda_permission" "interactions_api_get" {
+  statement_id  = "AllowAPIGatewayInvokeInteractionsGet"
+  action        = "lambda:InvokeFunction"
+  function_name = module.interactions_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/GET/interactions/*"
+}
+
+resource "aws_lambda_permission" "interactions_api_post" {
+  statement_id  = "AllowAPIGatewayInvokeInteractionsPost"
+  action        = "lambda:InvokeFunction"
+  function_name = module.interactions_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/interactions/*"
+}

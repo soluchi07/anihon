@@ -16,9 +16,6 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger("auth")
 logging.basicConfig(level=logging.INFO)
 
-COGNITO_USER_POOL_ID = os.environ.get("COGNITO_USER_POOL_ID", "")
-COGNITO_CLIENT_ID = os.environ.get("COGNITO_CLIENT_ID", "")
-
 
 def _parse_body(event):
     body = event.get("body")
@@ -62,9 +59,9 @@ def _decode_id_token(id_token):
         return {}
 
 
-def _signup(client, email, password, name):
+def _signup(client, email, password, name, pool_id, client_id):
     client.sign_up(
-        ClientId=COGNITO_CLIENT_ID,
+        ClientId=client_id,
         Username=email,
         Password=password,
         UserAttributes=[
@@ -73,11 +70,11 @@ def _signup(client, email, password, name):
         ],
     )
     # Auto-confirm for MVP
-    client.admin_confirm_sign_up(UserPoolId=COGNITO_USER_POOL_ID, Username=email)
+    client.admin_confirm_sign_up(UserPoolId=pool_id, Username=email)
 
     auth = client.admin_initiate_auth(
-        UserPoolId=COGNITO_USER_POOL_ID,
-        ClientId=COGNITO_CLIENT_ID,
+        UserPoolId=pool_id,
+        ClientId=client_id,
         AuthFlow="ADMIN_USER_PASSWORD_AUTH",
         AuthParameters={
             "USERNAME": email,
@@ -87,10 +84,10 @@ def _signup(client, email, password, name):
     return auth.get("AuthenticationResult", {})
 
 
-def _login(client, email, password):
+def _login(client, email, password, pool_id, client_id):
     auth = client.admin_initiate_auth(
-        UserPoolId=COGNITO_USER_POOL_ID,
-        ClientId=COGNITO_CLIENT_ID,
+        UserPoolId=pool_id,
+        ClientId=client_id,
         AuthFlow="ADMIN_USER_PASSWORD_AUTH",
         AuthParameters={
             "USERNAME": email,
@@ -103,7 +100,11 @@ def _login(client, email, password):
 def handler(event, context):
     logger.info("Auth handler invoked. Event: %s", event)
 
-    if not COGNITO_USER_POOL_ID or not COGNITO_CLIENT_ID:
+    # Read Cognito config at runtime for testability
+    cognito_user_pool_id = os.environ.get("COGNITO_USER_POOL_ID", "")
+    cognito_client_id = os.environ.get("COGNITO_CLIENT_ID", "")
+
+    if not cognito_user_pool_id or not cognito_client_id:
         return _response(500, {"status": "error", "message": "Cognito not configured"})
 
     body = _parse_body(event)
@@ -119,9 +120,9 @@ def handler(event, context):
 
     try:
         if path.endswith("/signup"):
-            result = _signup(client, email, password, name)
+            result = _signup(client, email, password, name, cognito_user_pool_id, cognito_client_id)
         elif path.endswith("/login"):
-            result = _login(client, email, password)
+            result = _login(client, email, password, cognito_user_pool_id, cognito_client_id)
         else:
             return _response(404, {"status": "error", "message": "Not found"})
 

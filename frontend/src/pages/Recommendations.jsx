@@ -1,13 +1,14 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import usePolling from "../components/PollingHook";
 import AnimeCard from "../components/AnimeCard";
-import { fetchRecommendations } from "../api/apiClient";
+import { fetchRecommendations, likeAnime } from "../api/apiClient";
 import "../styles/Recommendations.css";
 
 export default function Recommendations() {
   const { user } = useAuth();
+  const [likedIds, setLikedIds] = useState(new Set());
 
   const fetchFn = useCallback(async () => {
     const res = await fetchRecommendations(user.userId);
@@ -15,6 +16,16 @@ export default function Recommendations() {
   }, [user.userId]);
 
   const { data, loading } = usePolling(fetchFn, 3000);
+
+  const handleLike = useCallback(async (animeId) => {
+    if (likedIds.has(animeId)) return;
+    try {
+      await likeAnime(user.userId, animeId);
+      setLikedIds((prev) => new Set([...prev, animeId]));
+    } catch (err) {
+      console.error("Failed to like anime:", err);
+    }
+  }, [user.userId, likedIds]);
 
   return (
     <div className="recommendations-container">
@@ -49,7 +60,12 @@ export default function Recommendations() {
       {!loading && data && data.length > 0 && (
         <div className="recommendations-grid">
           {data.map((anime) => (
-            <AnimeCard key={anime.anime_id} anime={anime} />
+            <AnimeCard
+              key={anime.anime_id}
+              anime={anime}
+              liked={likedIds.has(anime.anime_id)}
+              onLike={handleLike}
+            />
           ))}
         </div>
       )}
