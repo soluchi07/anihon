@@ -52,23 +52,19 @@ export async function likeAnime(userId, animeId) {
   return res.json();
 }
 
-// Fetch single anime details (public, no auth required)
+// Fetch single anime details (authenticated route)
 export async function fetchAnimeDetails(animeId) {
   const res = await fetch(`${API_BASE}/anime/${animeId}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to fetch anime details");
   return res.json();
 }
 
-// Fetch similar anime (public, no auth required)
+// Fetch similar anime (authenticated route)
 export async function fetchSimilarAnime(animeId) {
   const res = await fetch(`${API_BASE}/anime/${animeId}/similar`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to fetch similar anime");
   return res.json();

@@ -140,6 +140,14 @@ The project follows a 10-week schedule with clear milestones:
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
+## Contributor Setup
+
+- Local setup runbook: [docs/CONTRIBUTOR_SETUP.md](docs/CONTRIBUTOR_SETUP.md)
+- Production readiness checklist: [docs/PRODUCTION_READINESS_CHECKLIST.md](docs/PRODUCTION_READINESS_CHECKLIST.md)
+- Environment templates:
+   - Root template: [.env.example](.env.example)
+   - Frontend template: [frontend/.env.example](frontend/.env.example)
+
 ### Development
 
 1. **Data Setup**: Process anime metadata
@@ -173,8 +181,24 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 ## Testing
 
 - **Unit Tests**: Available for Lambda handlers and algorithms
-- **Integration**: Manual end-to-end testing via UI
+- **Integration**: Live API integration chain test available at `backend/tests/integration/test_live_auth_flow.py`
 - **Performance**: Target response time <2 seconds for recommendations
+
+### Test Commands
+
+```bash
+# Backend tests
+pytest -q backend
+
+# Frontend unit tests
+cd frontend && npm test -- --watch=false --passWithNoTests
+
+# Frontend E2E tests (opt-in)
+cd frontend && E2E_TESTS=1 E2E_BASE_URL=http://localhost:3001 npm run test:e2e
+
+# Live integration chain (opt-in)
+INTEGRATION_TESTS=1 API_BASE=<api-base-url> pytest -q backend/tests/integration/test_live_auth_flow.py
+```
 
 ## Monitoring & Logging
 
@@ -207,5 +231,5 @@ For questions or issues, refer to the deployment guide in [DEPLOYMENT.md](DEPLOY
 
 ---
 
-**Status**: In Development (Week 1-10 Sprint)  
-**Last Updated**: February 2026
+**Status**: Active maintenance and reliability hardening complete (Phases 1-2)  
+**Last Updated**: April 2026

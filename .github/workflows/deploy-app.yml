@@ -3,23 +3,32 @@ name: Deploy App
 on:
   workflow_dispatch:
 
+concurrency:
+  group: deploy-app
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Build frontend
         working-directory: frontend
@@ -28,6 +37,26 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Package Lambda artifacts
+        run: bash scripts/package_lambdas.sh
+
+      - name: Validate Lambda artifacts
+        run: |
+          set -euo pipefail
+          EXPECTED=(
+            auth.zip
+            onboarding.zip
+            recommendation.zip
+            recommendation_worker.zip
+            anime_getter.zip
+            interactions.zip
+            lists.zip
+            data_ingest.zip
+          )
+          for artifact in "${EXPECTED[@]}"; do
+            test -f "build/lambdas/${artifact}"
+          done
 
       - name: Upload frontend to S3
         run: |
@@ -46,22 +75,51 @@ jobs:
 
       - name: Deploy Lambda functions
         run: |
-          LAMBDAS="auth onboarding recommendation-api recommendation-worker anime-getter interactions"
-          for fn in $LAMBDAS; do
-            SRC_MAP="auth:backend/lambdas/auth/handler.py \
-                     onboarding:backend/lambdas/onboarding/handler.py \
-                     recommendation-api:backend/lambdas/recommendation/handler.py \
-                     recommendation-worker:backend/lambdas/recommendation_worker/handler.py \
-                     anime-getter:backend/lambdas/anime_getter/handler.py \
-                     interactions:backend/lambdas/interactions/handler.py"
-          done
+          set -euo pipefail
+          declare -A ZIP_MAP=(
+            [auth]="auth.zip"
+            [onboarding]="onboarding.zip"
+            [recommendation-api]="recommendation.zip"
+            [recommendation-worker]="recommendation_worker.zip"
+            [anime-getter]="anime_getter.zip"
+            [interactions]="interactions.zip"
+            [lists]="lists.zip"
+            [data-ingest]="data_ingest.zip"
+          )
 
-          # Package and update each Lambda
-          for entry in $SRC_MAP; do
-            NAME="${entry%%:*}"
-            SRC="${entry##*:}"
-            zip -j /tmp/${NAME}.zip ${SRC}
+          for NAME in "${!ZIP_MAP[@]}"; do
+            ZIP_FILE="build/lambdas/${ZIP_MAP[$NAME]}"
             aws lambda update-function-code \
               --function-name ${{ secrets.PROJECT_NAME }}-${NAME} \
-              --zip-file fileb:///tmp/${NAME}.zip
+              --zip-file "fileb://${ZIP_FILE}"
           done
+
+      - name: Verify Lambda deployment status
+        run: |
+          set -euo pipefail
+          FUNCTIONS=(
+            auth
+            onboarding
+            recommendation-api
+            recommendation-worker
+            anime-getter
+            interactions
+            lists
+            data-ingest
+          )
+
+          for NAME in "${FUNCTIONS[@]}"; do
+            FN="${{ secrets.PROJECT_NAME }}-${NAME}"
+            aws lambda wait function-updated --function-name "$FN"
+            STATUS=$(aws lambda get-function-configuration --function-name "$FN" --query 'LastUpdateStatus' --output text)
+            test "$STATUS" = "Successful"
+          done
+
+      - name: Verify CloudFront serves app
+        run: |
+          set -euo pipefail
+          DIST_DOMAIN=$(aws cloudfront get-distribution \
+            --id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --query 'Distribution.DomainName' \
+            --output text)
+          curl --fail --silent --show-error "https://${DIST_DOMAIN}/" >/dev/null

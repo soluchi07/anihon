@@ -114,9 +114,6 @@ def handler(event, context):
         return {"status": "error", "error": "bucket not specified"}
 
     try:
-        dynamodb = boto3.resource("dynamodb")
-        table = dynamodb.Table(TABLE_NAME)
-
         # Stream and collect items in batches
         items = []
         for record in read_jsonl_from_s3(bucket, key, profile):
@@ -164,6 +161,9 @@ def handler(event, context):
             items.append(item)
 
         logger.info("Collected %d records from S3", len(items))
+
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(TABLE_NAME)
 
         # Batch write to DynamoDB
         written, failed = batch_write_to_dynamodb(table, items)

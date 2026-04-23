@@ -14,6 +14,10 @@ output "recommendation_cache_table_name" {
   value = aws_dynamodb_table.recommendation_cache.name
 }
 
+output "lists_table_name" {
+  value = aws_dynamodb_table.lists.name
+}
+
 output "anime_table_arn" {
   value = aws_dynamodb_table.anime.arn
 }
@@ -28,4 +32,8 @@ output "interactions_table_arn" {
 
 output "recommendation_cache_table_arn" {
   value = aws_dynamodb_table.recommendation_cache.arn
+}
+
+output "lists_table_arn" {
+  value = aws_dynamodb_table.lists.arn
 }

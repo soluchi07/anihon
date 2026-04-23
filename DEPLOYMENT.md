@@ -18,12 +18,17 @@ Your AnimeRec application is now deployed to production with the following archi
 - **Compute**: AWS Lambda (Python 3.10)
 - **Database**: DynamoDB
 - **Functions**:
+  - `/auth/signup` and `/auth/login` - User authentication
   - `/onboarding/{userId}` - User onboarding
   - `/recommendations/{userId}` - Get/trigger recommendations
+  - `/anime/{animeId}` - Fetch anime details
+  - `/anime/{animeId}/similar` - Fetch similar anime
+  - `/interactions/{userId}` - Like/rate interactions
+  - `/lists/{userId}` and `/lists/{userId}/{listKey}` - User list management
 
 ### Data
 - **Storage**: S3 buckets for anime data
-- **Database**: DynamoDB with 4 tables (anime, users, interactions, recommendation_cache)
+- **Database**: DynamoDB with 5 tables (anime, users, interactions, recommendation_cache, lists)
 - **Dataset**: 25,344+ anime from MyAnimeList
 
 ---
@@ -255,12 +260,11 @@ To use a custom domain instead of CloudFront default:
 
 ## Next Steps
 
-1. **Add Authentication**: Integrate AWS Cognito
-2. **Custom Domain**: Set up ACM certificate + custom domain
-3. **Analytics**: Add CloudFront & Lambda insights
-4. **CDN Optimization**: Leverage CloudFront geo-distribution
-5. **API Gateway Caching**: Cache recommendations responses
-6. **Auto-scaling**: Configure DynamoDB auto-scaling
+1. **Custom Domain**: Set up ACM certificate + custom domain
+2. **Observability Expansion**: Add dashboards and alerting for Lambda/API errors
+3. **Recommendation Quality**: Improve ranking quality and caching strategy
+4. **Coverage Expansion**: Increase integration and E2E test depth
+5. **Security Automation**: Add automated checklist gates to CI
 
 ---
 
@@ -277,3 +281,7 @@ For issues or questions:
 **Deployment Date**: 2026-01-30  
 **CloudFront Domain**: d9h4mfcv2arh5.cloudfront.net  
 **API Endpoint**: https://pchmrf7nr6.execute-api.us-east-1.amazonaws.com/dev
+
+For contributor onboarding and release gates, see:
+- [docs/CONTRIBUTOR_SETUP.md](docs/CONTRIBUTOR_SETUP.md)
+- [docs/PRODUCTION_READINESS_CHECKLIST.md](docs/PRODUCTION_READINESS_CHECKLIST.md)

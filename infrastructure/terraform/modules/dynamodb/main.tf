@@ -90,3 +90,23 @@ resource "aws_dynamodb_table" "recommendation_cache" {
 
   tags = var.tags
 }
+
+// UserAnimeLists table
+resource "aws_dynamodb_table" "lists" {
+  name           = "${var.project_name}-lists"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "user_id"
+  range_key      = "list_key"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "list_key"
+    type = "S"
+  }
+
+  tags = var.tags
+}

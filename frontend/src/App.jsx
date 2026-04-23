@@ -77,7 +77,14 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/anime/:id" element={<AnimeProfile />} />
+            <Route
+              path="/anime/:id"
+              element={
+                <ProtectedRoute>
+                  <AnimeProfile />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/onboarding"
               element={

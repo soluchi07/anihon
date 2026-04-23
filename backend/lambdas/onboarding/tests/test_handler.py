@@ -1,15 +1,18 @@
 """Unit tests for onboarding API handler."""
 import json
 import sys
+import importlib.util
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from handler import handler
+_HANDLER_PATH = Path(__file__).parent.parent / "handler.py"
+_SPEC = importlib.util.spec_from_file_location("onboarding_handler", _HANDLER_PATH)
+_MODULE = importlib.util.module_from_spec(_SPEC)
+assert _SPEC and _SPEC.loader
+_SPEC.loader.exec_module(_MODULE)
+handler = _MODULE.handler
 
 
 def _make_event(user_id, body=None):

@@ -641,9 +641,16 @@ resource "aws_api_gateway_deployment" "api_deployment" {
     aws_api_gateway_integration.anime_getter_options,
     aws_api_gateway_integration.anime_getter_id_get,
     aws_api_gateway_integration.anime_getter_id_options,
+    aws_api_gateway_integration.anime_getter_similar_get,
+    aws_api_gateway_integration.anime_getter_similar_options,
     aws_api_gateway_integration.interactions_get,
     aws_api_gateway_integration.interactions_post,
     aws_api_gateway_integration.interactions_options,
+    aws_api_gateway_integration.lists_get,
+    aws_api_gateway_integration.lists_post,
+    aws_api_gateway_integration.lists_delete,
+    aws_api_gateway_integration.lists_options,
+    aws_api_gateway_integration.lists_item_options,
   ]
 }
 
@@ -670,6 +677,7 @@ locals {
 
   anime_getter_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.anime_getter_lambda.lambda_arn}/invocations"
   interactions_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.interactions_lambda.lambda_arn}/invocations"
+  lists_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.lists_lambda.lambda_arn}/invocations"
 }
 
 // ── Anime Getter Lambda ────────────────────────────────────────────────────
@@ -728,6 +736,13 @@ resource "aws_api_gateway_resource" "anime_id" {
   path_part   = "{animeId}"
 }
 
+// /anime/{animeId}/similar
+resource "aws_api_gateway_resource" "anime_similar" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.anime_id.id
+  path_part   = "similar"
+}
+
 resource "aws_api_gateway_method" "anime_getter_get" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.anime.id
@@ -760,6 +775,24 @@ resource "aws_api_gateway_method" "anime_getter_id_get" {
 resource "aws_api_gateway_method" "anime_getter_id_options" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.anime_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "anime_getter_similar_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime_similar.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "anime_getter_similar_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.anime_similar.id
   http_method   = "OPTIONS"
   authorization = "NONE"
 }
@@ -818,6 +851,15 @@ resource "aws_api_gateway_integration" "anime_getter_id_get" {
   uri                     = local.anime_getter_invoke_arn
 }
 
+resource "aws_api_gateway_integration" "anime_getter_similar_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.anime_similar.id
+  http_method             = aws_api_gateway_method.anime_getter_similar_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.anime_getter_invoke_arn
+}
+
 resource "aws_api_gateway_integration" "anime_getter_id_options" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   resource_id = aws_api_gateway_resource.anime_id.id
@@ -838,6 +880,42 @@ resource "aws_api_gateway_method_response" "anime_getter_id_options" {
     "method.response.header.Access-Control-Allow-Headers" = true
     "method.response.header.Access-Control-Allow-Methods" = true
     "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration" "anime_getter_similar_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_similar.id
+  http_method = aws_api_gateway_method.anime_getter_similar_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "anime_getter_similar_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_similar.id
+  http_method = aws_api_gateway_method.anime_getter_similar_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "anime_getter_similar_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.anime_similar.id
+  http_method = aws_api_gateway_method.anime_getter_similar_options.http_method
+  status_code = aws_api_gateway_method_response.anime_getter_similar_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
   }
 }
 
@@ -1011,4 +1089,235 @@ resource "aws_lambda_permission" "interactions_api_post" {
   function_name = module.interactions_lambda.lambda_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/interactions/*"
+}
+
+// ── Lists Lambda ───────────────────────────────────────────────────────────
+
+module "lists_lambda" {
+  source = "./modules/lambda"
+
+  project_name     = var.project_name
+  function_name    = "lists"
+  source_code_path = "${path.module}/../../backend/lambdas/lists/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
+
+  environment_vars = {
+    LISTS_TABLE = module.dynamodb.lists_table_name
+  }
+}
+
+resource "aws_iam_role_policy" "lists_policy" {
+  name = "${var.project_name}-lists-policy"
+  role = module.lists_lambda.role_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query"
+        ]
+        Resource = module.dynamodb.lists_table_arn
+      }
+    ]
+  })
+}
+
+// /lists
+resource "aws_api_gateway_resource" "lists" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "lists"
+}
+
+// /lists/{userId}
+resource "aws_api_gateway_resource" "lists_user" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.lists.id
+  path_part   = "{userId}"
+}
+
+// /lists/{userId}/{listKey}
+resource "aws_api_gateway_resource" "lists_user_item" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_resource.lists_user.id
+  path_part   = "{listKey}"
+}
+
+resource "aws_api_gateway_method" "lists_get" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.lists_user.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "lists_post" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.lists_user.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "lists_delete" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.lists_user_item.id
+  http_method   = "DELETE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+}
+
+resource "aws_api_gateway_method" "lists_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.lists_user.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "lists_item_options" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.lists_user_item.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "lists_get" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.lists_user.id
+  http_method             = aws_api_gateway_method.lists_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.lists_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "lists_post" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.lists_user.id
+  http_method             = aws_api_gateway_method.lists_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.lists_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "lists_delete" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.lists_user_item.id
+  http_method             = aws_api_gateway_method.lists_delete.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = local.lists_invoke_arn
+}
+
+resource "aws_api_gateway_integration" "lists_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user.id
+  http_method = aws_api_gateway_method.lists_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_integration" "lists_item_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user_item.id
+  http_method = aws_api_gateway_method.lists_item_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "lists_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user.id
+  http_method = aws_api_gateway_method.lists_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_method_response" "lists_item_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user_item.id
+  http_method = aws_api_gateway_method.lists_item_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "lists_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user.id
+  http_method = aws_api_gateway_method.lists_options.http_method
+  status_code = aws_api_gateway_method_response.lists_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_api_gateway_integration_response" "lists_item_options" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.lists_user_item.id
+  http_method = aws_api_gateway_method.lists_item_options.http_method
+  status_code = aws_api_gateway_method_response.lists_item_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,DELETE'"
+    "method.response.header.Access-Control-Allow-Origin"  = local.cors_origin
+  }
+}
+
+resource "aws_lambda_permission" "lists_api_get" {
+  statement_id  = "AllowAPIGatewayInvokeListsGet"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lists_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/GET/lists/*"
+}
+
+resource "aws_lambda_permission" "lists_api_post" {
+  statement_id  = "AllowAPIGatewayInvokeListsPost"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lists_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/POST/lists/*"
+}
+
+resource "aws_lambda_permission" "lists_api_delete" {
+  statement_id  = "AllowAPIGatewayInvokeListsDelete"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lists_lambda.lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/DELETE/lists/*"
 }
