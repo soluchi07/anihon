@@ -1145,11 +1145,11 @@ resource "aws_api_gateway_resource" "lists_user" {
   path_part   = "{userId}"
 }
 
-// /lists/{userId}/{listKey}
+// /lists/{userId}/{compositeKey}
 resource "aws_api_gateway_resource" "lists_user_item" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   parent_id   = aws_api_gateway_resource.lists_user.id
-  path_part   = "{listKey}"
+  path_part   = "{compositeKey}"
 }
 
 resource "aws_api_gateway_method" "lists_get" {
