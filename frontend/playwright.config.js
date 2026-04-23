@@ -1,6 +1,7 @@
 const { defineConfig } = require("@playwright/test");
 
 const baseURL = process.env.E2E_BASE_URL || "http://localhost:3001";
+const basePort = new URL(baseURL).port || "3001";
 
 module.exports = defineConfig({
   testDir: "./tests/e2e",
@@ -12,6 +13,10 @@ module.exports = defineConfig({
   webServer: {
     command: "npm start",
     url: baseURL,
+    env: {
+      ...process.env,
+      PORT: process.env.PORT || basePort,
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

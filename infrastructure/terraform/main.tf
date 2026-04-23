@@ -21,14 +21,14 @@ module "dynamodb" {
 module "onboarding_lambda" {
   source = "./modules/lambda"
 
-  project_name      = var.project_name
-  function_name     = "onboarding"
-  source_code_path  = "${path.module}/../../backend/lambdas/onboarding/handler.py"
-  handler           = "handler.handler"
-  runtime           = "python3.10"
-  timeout           = 30
-  memory_size       = 256
-  tags              = local.common_tags
+  project_name     = var.project_name
+  function_name    = "onboarding"
+  source_code_path = "${path.module}/../../backend/lambdas/onboarding/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
 
   environment_vars = {
     USERS_TABLE = module.dynamodb.users_table_name
@@ -39,14 +39,14 @@ module "onboarding_lambda" {
 module "auth_lambda" {
   source = "./modules/lambda"
 
-  project_name      = var.project_name
-  function_name     = "auth"
-  source_code_path  = "${path.module}/../../backend/lambdas/auth/handler.py"
-  handler           = "handler.handler"
-  runtime           = "python3.10"
-  timeout           = 30
-  memory_size       = 256
-  tags              = local.common_tags
+  project_name     = var.project_name
+  function_name    = "auth"
+  source_code_path = "${path.module}/../../backend/lambdas/auth/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
 
   environment_vars = {
     COGNITO_USER_POOL_ID = module.cognito.user_pool_id
@@ -96,14 +96,14 @@ resource "aws_iam_role_policy" "onboarding_policy" {
 module "recommendation_api_lambda" {
   source = "./modules/lambda"
 
-  project_name      = var.project_name
-  function_name     = "recommendation-api"
-  source_code_path  = "${path.module}/../../backend/lambdas/recommendation/handler.py"
-  handler           = "handler.handler"
-  runtime           = "python3.10"
-  timeout           = 30
-  memory_size       = 256
-  tags              = local.common_tags
+  project_name     = var.project_name
+  function_name    = "recommendation-api"
+  source_code_path = "${path.module}/../../backend/lambdas/recommendation/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 30
+  memory_size      = 256
+  tags             = local.common_tags
 
   environment_vars = {
     RECOMMENDATION_CACHE_TABLE     = module.dynamodb.recommendation_cache_table_name
@@ -141,22 +141,22 @@ resource "aws_iam_role_policy" "recommendation_api_policy" {
 module "recommendation_worker_lambda" {
   source = "./modules/lambda"
 
-  project_name      = var.project_name
-  function_name     = "recommendation-worker"
-  source_code_path  = "${path.module}/../../backend/lambdas/recommendation_worker/handler.py"
-  handler           = "handler.handler"
-  runtime           = "python3.10"
-  timeout           = 60
-  memory_size       = 512
-  tags              = local.common_tags
+  project_name     = var.project_name
+  function_name    = "recommendation-worker"
+  source_code_path = "${path.module}/../../backend/lambdas/recommendation_worker/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 60
+  memory_size      = 512
+  tags             = local.common_tags
 
   environment_vars = {
-    USERS_TABLE               = module.dynamodb.users_table_name
-    INTERACTIONS_TABLE        = module.dynamodb.interactions_table_name
-    ANIME_TABLE               = module.dynamodb.anime_table_name
+    USERS_TABLE                = module.dynamodb.users_table_name
+    INTERACTIONS_TABLE         = module.dynamodb.interactions_table_name
+    ANIME_TABLE                = module.dynamodb.anime_table_name
     RECOMMENDATION_CACHE_TABLE = module.dynamodb.recommendation_cache_table_name
-    TOP_N                     = "20"
-    CACHE_TTL_SECONDS         = "86400"
+    TOP_N                      = "20"
+    CACHE_TTL_SECONDS          = "86400"
   }
 }
 
@@ -197,19 +197,19 @@ resource "aws_iam_role_policy" "recommendation_worker_policy" {
 module "data_ingest_lambda" {
   source = "./modules/lambda"
 
-  project_name      = var.project_name
-  function_name     = "data-ingest"
-  source_code_path  = "${path.module}/../../backend/lambdas/data_ingest/handler.py"
-  handler           = "handler.handler"
-  runtime           = "python3.10"
-  timeout           = 600
-  memory_size       = 512
-  tags              = local.common_tags
+  project_name     = var.project_name
+  function_name    = "data-ingest"
+  source_code_path = "${path.module}/../../backend/lambdas/data_ingest/handler.py"
+  handler          = "handler.handler"
+  runtime          = "python3.10"
+  timeout          = 600
+  memory_size      = 512
+  tags             = local.common_tags
 
   environment_vars = {
-    ANIME_TABLE  = module.dynamodb.anime_table_name
-    DATA_BUCKET  = aws_s3_bucket.data_bucket.id
-    DATA_KEY     = "cleaned/anime_meta_cleaned.jsonl"
+    ANIME_TABLE = module.dynamodb.anime_table_name
+    DATA_BUCKET = aws_s3_bucket.data_bucket.id
+    DATA_KEY    = "cleaned/anime_meta_cleaned.jsonl"
   }
 }
 
@@ -258,10 +258,10 @@ resource "aws_api_gateway_rest_api" "api" {
 
 // Cognito Authorizer for API Gateway
 resource "aws_api_gateway_authorizer" "cognito" {
-  name          = "${var.project_name}-cognito-auth"
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  type          = "COGNITO_USER_POOLS"
-  provider_arns = [module.cognito.user_pool_arn]
+  name            = "${var.project_name}-cognito-auth"
+  rest_api_id     = aws_api_gateway_rest_api.api.id
+  type            = "COGNITO_USER_POOLS"
+  provider_arns   = [module.cognito.user_pool_arn]
   identity_source = "method.request.header.Authorization"
 }
 
@@ -338,20 +338,20 @@ resource "aws_api_gateway_integration" "auth_login_post" {
 }
 
 resource "aws_api_gateway_integration" "auth_signup_options" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.auth_signup.id
-  http_method             = aws_api_gateway_method.auth_signup_options.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_signup.id
+  http_method = aws_api_gateway_method.auth_signup_options.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 
 resource "aws_api_gateway_integration" "auth_login_options" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.auth_login.id
-  http_method             = aws_api_gateway_method.auth_login_options.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.auth_login.id
+  http_method = aws_api_gateway_method.auth_login_options.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -416,11 +416,11 @@ resource "aws_api_gateway_resource" "onboarding_user" {
 }
 
 resource "aws_api_gateway_method" "onboarding_post" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.onboarding_user.id
-  http_method             = "POST"
-  authorization           = "COGNITO_USER_POOLS"
-  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.onboarding_user.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
   request_parameters = {
     "method.request.header.Authorization" = true
   }
@@ -443,10 +443,10 @@ resource "aws_api_gateway_integration" "onboarding_post" {
 }
 
 resource "aws_api_gateway_integration" "onboarding_options" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.onboarding_user.id
-  http_method             = aws_api_gateway_method.onboarding_options.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.onboarding_user.id
+  http_method = aws_api_gateway_method.onboarding_options.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -492,22 +492,22 @@ resource "aws_api_gateway_resource" "recommendations_user" {
 }
 
 resource "aws_api_gateway_method" "recommendations_get" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.recommendations_user.id
-  http_method             = "GET"
-  authorization           = "COGNITO_USER_POOLS"
-  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.recommendations_user.id
+  http_method   = "GET"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
   request_parameters = {
     "method.request.header.Authorization" = true
   }
 }
 
 resource "aws_api_gateway_method" "recommendations_post" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.recommendations_user.id
-  http_method             = "POST"
-  authorization           = "COGNITO_USER_POOLS"
-  authorizer_id           = aws_api_gateway_authorizer.cognito.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.recommendations_user.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
   request_parameters = {
     "method.request.header.Authorization" = true
   }
@@ -539,10 +539,10 @@ resource "aws_api_gateway_integration" "recommendations_post" {
 }
 
 resource "aws_api_gateway_integration" "recommendations_options" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.recommendations_user.id
-  http_method             = aws_api_gateway_method.recommendations_options.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.recommendations_user.id
+  http_method = aws_api_gateway_method.recommendations_options.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -667,17 +667,17 @@ locals {
     Project     = var.project_name
   })
 
-  onboarding_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.onboarding_lambda.lambda_arn}/invocations"
-  auth_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.auth_lambda.lambda_arn}/invocations"
+  onboarding_invoke_arn      = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.onboarding_lambda.lambda_arn}/invocations"
+  auth_invoke_arn            = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.auth_lambda.lambda_arn}/invocations"
   recommendations_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.recommendation_api_lambda.lambda_arn}/invocations"
-  
+
   # CORS origin: wrap in single quotes for API Gateway mapping expression
   # Use '*' to allow all origins for development (change to specific domain for production)
   cors_origin = var.frontend_domain != "" ? "'${var.frontend_domain}'" : "'*'"
 
   anime_getter_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.anime_getter_lambda.lambda_arn}/invocations"
   interactions_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.interactions_lambda.lambda_arn}/invocations"
-  lists_invoke_arn = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.lists_lambda.lambda_arn}/invocations"
+  lists_invoke_arn        = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${module.lists_lambda.lambda_arn}/invocations"
 }
 
 // ── Anime Getter Lambda ────────────────────────────────────────────────────

@@ -1,5 +1,2 @@
-aws_region = "us-east-1"
+aws_region   = "us-east-1"
 project_name = "animerec"
-s3_frontend_bucket = "animerec-frontend-dev"
-s3_data_bucket = "animerec-data-dev"
-budget_amount = 20

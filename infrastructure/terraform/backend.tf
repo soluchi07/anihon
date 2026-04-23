@@ -4,12 +4,12 @@
 
 terraform {
   required_version = ">= 1.3.0"
-  
+
   # Local backend for now
   backend "local" {
     path = "terraform.tfstate"
   }
-  
+
   # Uncomment and configure when ready for remote state:
   # backend "s3" {
   #   bucket         = "anime-rec-terraform-state"

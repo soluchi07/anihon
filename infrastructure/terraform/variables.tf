@@ -14,7 +14,7 @@ variable "aws_region" {
 variable "frontend_domain" {
   description = "Frontend domain for CORS (CloudFront distribution domain or custom domain)"
   type        = string
-  default     = ""  # Will be set to CloudFront domain after deployment
+  default     = "" # Will be set to CloudFront domain after deployment
 }
 
 variable "environment" {

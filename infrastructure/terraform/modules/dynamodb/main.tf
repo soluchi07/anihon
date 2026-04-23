@@ -2,9 +2,9 @@
 
 // Anime table
 resource "aws_dynamodb_table" "anime" {
-  name           = "${var.project_name}-anime"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "anime_id"
+  name         = "${var.project_name}-anime"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "anime_id"
 
   attribute {
     name = "anime_id"
@@ -40,9 +40,9 @@ resource "aws_dynamodb_table" "anime" {
 
 // Users table
 resource "aws_dynamodb_table" "users" {
-  name           = "${var.project_name}-users"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_id"
+  name         = "${var.project_name}-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
 
   attribute {
     name = "user_id"
@@ -54,10 +54,10 @@ resource "aws_dynamodb_table" "users" {
 
 // UserAnimeInteractions table
 resource "aws_dynamodb_table" "interactions" {
-  name           = "${var.project_name}-interactions"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_id"
-  range_key      = "anime_id"
+  name         = "${var.project_name}-interactions"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "anime_id"
 
   attribute {
     name = "user_id"
@@ -74,9 +74,9 @@ resource "aws_dynamodb_table" "interactions" {
 
 // RecommendationCache table with TTL
 resource "aws_dynamodb_table" "recommendation_cache" {
-  name           = "${var.project_name}-recommendation-cache"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_id"
+  name         = "${var.project_name}-recommendation-cache"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
 
   attribute {
     name = "user_id"
@@ -93,10 +93,10 @@ resource "aws_dynamodb_table" "recommendation_cache" {
 
 // UserAnimeLists table
 resource "aws_dynamodb_table" "lists" {
-  name           = "${var.project_name}-lists"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "user_id"
-  range_key      = "list_key"
+  name         = "${var.project_name}-lists"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "list_key"
 
   attribute {
     name = "user_id"

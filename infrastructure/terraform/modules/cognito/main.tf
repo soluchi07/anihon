@@ -39,23 +39,23 @@ resource "aws_cognito_user_pool" "main" {
 
 # User Pool Client for frontend (SPA)
 resource "aws_cognito_user_pool_client" "main" {
-  name            = "${var.project_name}-client"
-  user_pool_id    = aws_cognito_user_pool.main.id
-  
+  name         = "${var.project_name}-client"
+  user_pool_id = aws_cognito_user_pool.main.id
+
   # Allow implicit flow for SPA
-  allowed_oauth_flows          = ["code", "implicit"]
+  allowed_oauth_flows                  = ["code", "implicit"]
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes         = ["email", "openid", "profile"]
-  
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+
   # Callback URLs
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
-  
+
   # Token expiration (in seconds)
-  access_token_validity  = 1   # 1 hour
-  id_token_validity      = 1   # 1 hour
-  refresh_token_validity = 30  # 30 days
-  
+  access_token_validity  = 1  # 1 hour
+  id_token_validity      = 1  # 1 hour
+  refresh_token_validity = 30 # 30 days
+
   token_validity_units {
     access_token  = "hours"
     id_token      = "hours"
@@ -82,7 +82,7 @@ resource "aws_cognito_user_pool_domain" "main" {
 
 # Identity Pool for AWS credentials
 resource "aws_cognito_identity_pool" "main" {
-  identity_pool_name             = "${var.project_name}-identity-pool"
+  identity_pool_name               = "${var.project_name}-identity-pool"
   allow_unauthenticated_identities = false
 
   cognito_identity_providers {
