@@ -172,9 +172,10 @@ def recommend_anime(
                 avg_vec[k] = avg_vec.get(k, 0.0) + v
         for k in avg_vec:
             avg_vec[k] /= len(liked_vecs)
-        # Merge with preference vector (50/50 weight)
+        # Merge with preference vector (true 50/50 weight on all keys)
+        pref_vec = {k: v * 0.5 for k, v in pref_vec.items()}
         for k, v in avg_vec.items():
-            pref_vec[k] = pref_vec.get(k, 0.0) * 0.5 + v * 0.5
+            pref_vec[k] = pref_vec.get(k, 0.0) + v * 0.5
     
     # Score all candidate anime
     scored = []

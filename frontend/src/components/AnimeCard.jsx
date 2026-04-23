@@ -17,6 +17,9 @@ export default function AnimeCard({
   const navigate = useNavigate();
   const score = anime.score != null ? Number(anime.score).toFixed(2) : 'N/A';
   const popularity = anime.popularity_score != null ? Number(anime.popularity_score).toFixed(0) : 'N/A';
+  // Only treat score as a recommendation match % if it's in [0, 1] (algorithm output).
+  // Anime detail/list/similar cards carry the MAL score (1–10) in the same field.
+  const isMatchScore = score !== 'N/A' && Number(score) <= 1.0;
 
   const getScoreClass = (s) => {
     if (s === 'N/A') return '';
@@ -63,7 +66,7 @@ export default function AnimeCard({
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
-        aria-label={`${anime.title}${score !== 'N/A' ? `, ${(Number(score) * 100).toFixed(0)}% match` : ''}`}
+        aria-label={`${anime.title}${isMatchScore ? `, ${(Number(score) * 100).toFixed(0)}% match` : ''}`}
       >
         {/* Full-card image */}
         <div className="poster-image-wrap">
@@ -79,8 +82,8 @@ export default function AnimeCard({
           )}
         </div>
 
-        {/* Match badge — always visible */}
-        {score !== 'N/A' && (
+        {/* Match badge — only shown for recommendation scores (0–1 range) */}
+        {isMatchScore && (
           <span className="poster-match-badge" aria-hidden="true">
             {(Number(score) * 100).toFixed(0)}% match
           </span>
@@ -159,12 +162,14 @@ export default function AnimeCard({
         )}
 
         <div className="anime-card-stats">
+          {isMatchScore && (
           <div className="stat-item">
             <span className="stat-label">Match</span>
             <span className={`stat-value ${getScoreClass(score)}`}>
-              {score !== 'N/A' ? `${(Number(score) * 100).toFixed(0)}%` : 'N/A'}
+              {`${(Number(score) * 100).toFixed(0)}%`}
             </span>
           </div>
+          )}
           <div className="stat-item">
             <span className="stat-label">Popularity</span>
             <span className="stat-value">
