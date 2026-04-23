@@ -1,5 +1,6 @@
 plan.txt
 proposal.pdf
+*.rtf
 # Do not commit large raw or cleaned datasets
 data/anime_meta_cleaned*.jsonl
 data/cleaned/
@@ -27,3 +28,6 @@ infrastructure/terraform/.terraform/
 frontend/node_modules
 *.tfstate
 *.tfstate.backup
+
+.claude
+CLAUDE.md

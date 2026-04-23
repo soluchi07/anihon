@@ -86,6 +86,18 @@ animerec/
     └── remove_music_batch.py # Data cleaning script
 ```
 
+## Course Deliverables
+
+| Document | Description |
+|---|---|
+| [docs/architecture.puml](docs/architecture.puml) | UML component diagram — render with [PlantUML](https://plantuml.com/) |
+| [docs/reflection.md](docs/reflection.md) | Project reflection (what was built, cloud concepts, challenges, lessons learned) |
+| [docs/evidence.md](docs/evidence.md) | Evidence of implementation — screenshot guide, code snippets, sample output |
+
+## Architecture
+
+See [`docs/architecture.puml`](docs/architecture.puml) for the full UML component diagram (render with [PlantUML](https://plantuml.com/) or the [VS Code PlantUML extension](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml)).
+
 ## Architecture Highlights
 
 ### Serverless Design

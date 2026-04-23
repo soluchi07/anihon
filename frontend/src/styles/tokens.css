@@ -1,0 +1,69 @@
+/* =============================================================
+   DESIGN TOKENS — Crimson Noir
+   Single source of truth. Never hardcode values in other files.
+   ============================================================= */
+
+:root {
+  /* Colors */
+  --color-bg:           #000000;
+  --color-surface:      #0d0d0d;
+  --color-surface-alt:  #350c00;
+  --color-accent:       #770000;
+  --color-accent-lit:   #a01010;
+  --color-text-primary: #ffd788;
+  --color-text-muted:   #b89a5e;
+  --color-text-inverse: #000000;
+  --color-border:       #350c00;
+  --color-border-lit:   #770000;
+  --color-error:        #ff6b6b;
+  --color-success:      #4caf82;
+
+  /* Typography */
+  --font-display: 'Dela Gothic One', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --type-display: clamp(2.5rem, 6vw, 5rem);
+  --type-title:   clamp(1.5rem, 3vw, 2.25rem);
+  --type-heading: 1.25rem;
+  --type-body:    1rem;
+  --type-small:   0.875rem;
+  --type-xs:      0.75rem;
+
+  /* Spacing */
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  /* Border radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-card:       0 4px 15px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 8px 32px rgba(119, 0, 0, 0.3);
+  --shadow-modal:      0 20px 60px rgba(0, 0, 0, 0.7);
+
+  /* Focus ring — 2px crimson outline + gold glow for WCAG AA */
+  --focus-ring: 0 0 0 2px #770000, 0 0 0 5px rgba(255, 215, 136, 0.2);
+
+  /* Motion */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* Respect OS-level reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

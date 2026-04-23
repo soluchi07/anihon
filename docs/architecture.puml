@@ -1,0 +1,104 @@
+@startuml AnimeRec Architecture
+
+title AnimeRec - AWS Serverless Architecture\nComponent Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultFontSize 12
+skinparam ArrowColor #333333
+skinparam componentBackgroundColor #EEF4FF
+skinparam packageBackgroundColor #F8F8F8
+skinparam databaseBackgroundColor #FFF8EE
+skinparam noteBackgroundColor #FFFFF0
+
+actor "User / Browser" as User
+
+package "Frontend Delivery" {
+  [CloudFront CDN] as CF
+  [S3\n(React SPA)] as S3Frontend
+}
+
+package "API Layer" {
+  [API Gateway\n(REST)] as APIGW
+}
+
+package "Lambda Functions" {
+  [auth] as AuthLambda
+  [onboarding] as OnboardingLambda
+  [recommendation-api] as RecApiLambda
+  [recommendation_worker] as RecWorkerLambda
+  [anime_getter] as AnimeGetterLambda
+  [interactions] as InteractionsLambda
+  [lists] as ListsLambda
+  [data_ingest] as DataIngestLambda
+}
+
+package "Data & Auth Services" {
+  database "DynamoDB" {
+    [Users] as UsersDB
+    [Anime] as AnimeDB
+    [Interactions] as InteractionsDB
+    [RecommendationCache] as CacheDB
+    [Lists] as ListsDB
+  }
+
+  [Amazon Cognito\n(User Pool)] as Cognito
+  [S3\n(Dataset & Assets)] as S3Data
+  [CloudWatch Logs] as CW
+}
+
+' ── User → Frontend ──────────────────────────────────────────
+User --> CF           : HTTPS (SPA)
+CF   --> S3Frontend   : serve static assets
+
+' ── User → API ───────────────────────────────────────────────
+User --> APIGW        : HTTPS + Bearer JWT
+
+' ── API Gateway → Lambdas ────────────────────────────────────
+APIGW --> AuthLambda         : POST /auth/signup\nPOST /auth/login
+APIGW --> OnboardingLambda   : POST /onboarding
+APIGW --> RecApiLambda       : GET /recommendations\nPOST /recommendations/refresh
+APIGW --> AnimeGetterLambda  : GET /anime/{id}
+APIGW --> InteractionsLambda : POST /interactions
+APIGW --> ListsLambda        : GET/POST /lists
+APIGW --> DataIngestLambda   : POST /ingest
+
+' ── Lambda → Auth & Users ────────────────────────────────────
+AuthLambda       --> Cognito   : createUser / initiateAuth
+AuthLambda       --> UsersDB   : putItem (new user record)
+OnboardingLambda --> UsersDB   : putItem (genre & studio prefs,\npopularity opt-in)
+
+' ── Lambda → Recommendations ─────────────────────────────────
+RecApiLambda    --> CacheDB        : getItem (cached recs)
+RecApiLambda    ..> RecWorkerLambda : async invoke\n(cache miss)
+RecWorkerLambda --> AnimeDB        : scan (feature vectors)
+RecWorkerLambda --> UsersDB        : getItem (user prefs)
+RecWorkerLambda --> InteractionsDB : query (liked anime\nfor cold-start)
+RecWorkerLambda --> CacheDB        : putItem (top-20 results\n+ TTL)
+
+' ── Lambda → Anime ───────────────────────────────────────────
+AnimeGetterLambda --> AnimeDB : getItem / query\n(metadata + similar list)
+
+' ── Lambda → Interactions & Lists ────────────────────────────
+InteractionsLambda --> InteractionsDB : putItem (like / rating 1-10)
+ListsLambda        --> ListsDB        : query / putItem\n(watchlist, completed…)
+
+' ── Lambda → Data Ingest ─────────────────────────────────────
+DataIngestLambda --> S3Data  : getObject (raw anime JSON)
+DataIngestLambda --> AnimeDB : batchWriteItem\n(metadata + feature vectors)
+
+' ── All Lambdas → CloudWatch ─────────────────────────────────
+note bottom of CW
+  All Lambda functions emit
+  execution logs to CloudWatch.
+end note
+
+AuthLambda       --> CW : logs
+OnboardingLambda --> CW : logs
+RecApiLambda     --> CW : logs
+RecWorkerLambda  --> CW : logs
+AnimeGetterLambda --> CW : logs
+InteractionsLambda --> CW : logs
+ListsLambda      --> CW : logs
+DataIngestLambda --> CW : logs
+
+@enduml
