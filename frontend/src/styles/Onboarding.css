@@ -5,10 +5,11 @@
 }
 
 .onboarding-card {
-  background: white;
-  border-radius: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   padding: 3rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-modal);
 }
 
 .onboarding-header {
@@ -17,14 +18,15 @@
 }
 
 .onboarding-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #667eea;
+  font-family: var(--font-display);
+  font-size: var(--type-title);
+  font-weight: 400;
+  color: var(--color-text-primary);
   margin-bottom: 0.5rem;
 }
 
 .onboarding-description {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 1.1rem;
 }
 
@@ -36,7 +38,7 @@
   display: block;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
 }
 
@@ -57,33 +59,42 @@
 
 .selection-item input[type="checkbox"] {
   position: absolute;
+  width: 1px;
+  height: 1px;
   opacity: 0;
 }
 
 .selection-item label {
   display: block;
   padding: 1rem;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow);
   font-weight: 500;
+  color: var(--color-text-muted);
   user-select: none;
 }
 
 .selection-item input[type="checkbox"]:checked + label {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
+  background: var(--color-surface-alt);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-lit);
   transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(119, 0, 0, 0.4);
 }
 
 .selection-item label:hover {
-  border-color: #667eea;
+  border-color: var(--color-border-lit);
+  color: var(--color-text-primary);
   transform: translateY(-2px);
+  background: rgba(119, 0, 0, 0.1);
+}
+
+.selection-item input[type="checkbox"]:focus-visible + label {
+  box-shadow: var(--focus-ring);
 }
 
 .preference-toggle {
@@ -91,8 +102,9 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   margin-top: 1rem;
 }
 
@@ -101,15 +113,16 @@
   height: 26px;
   position: relative;
   appearance: none;
-  background: #ccc;
+  background: var(--color-border);
   outline: none;
   border-radius: 13px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: background var(--transition-slow);
+  flex-shrink: 0;
 }
 
 .preference-toggle input[type="checkbox"]:checked {
-  background: #667eea;
+  background: var(--color-accent);
 }
 
 .preference-toggle input[type="checkbox"]::before {
@@ -120,18 +133,23 @@
   border-radius: 50%;
   top: 2px;
   left: 2px;
-  background: white;
-  transition: 0.3s;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  background: var(--color-text-primary);
+  transition: left var(--transition-slow);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
 .preference-toggle input[type="checkbox"]:checked::before {
   left: 26px;
 }
 
+.preference-toggle input[type="checkbox"]:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
 .preference-label {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-muted);
+  font-size: var(--type-small);
   flex: 1;
 }
 
@@ -144,15 +162,16 @@
   width: 100%;
   max-width: 400px;
   padding: 1.25rem;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .status-badge {
   display: inline-block;
   padding: 0.75rem 1.5rem;
   margin-top: 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
+  font-size: var(--type-small);
 }
 
 @media (max-width: 768px) {
@@ -161,7 +180,7 @@
   }
 
   .onboarding-title {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 
   .selection-grid {

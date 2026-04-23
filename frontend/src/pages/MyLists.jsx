@@ -6,10 +6,10 @@ import AnimeCard from '../components/AnimeCard';
 import '../styles/MyLists.css';
 
 const LIST_TABS = [
-  { value: 'watching', label: '👁️ Watching', color: '#667eea' },
-  { value: 'completed', label: '✅ Completed', color: '#28a745' },
-  { value: 'plan_to_watch', label: '📅 Plan to Watch', color: '#ffc107' },
-  { value: 'on_hold', label: '⏸️ On Hold', color: '#6c757d' },
+  { value: 'watching', label: 'Watching' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'plan_to_watch', label: 'Plan to Watch' },
+  { value: 'on_hold', label: 'On Hold' },
 ];
 
 export default function MyLists() {
@@ -170,9 +170,8 @@ export default function MyLists() {
               key={tab.value}
               className={`list-tab ${activeTab === tab.value ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.value)}
-              style={activeTab === tab.value ? { borderBottomColor: tab.color } : {}}
             >
-              <span style={{ color: tab.color }}>{tab.label}</span>
+              {tab.label}
               <span className="tab-count">{count}</span>
             </button>
           );
@@ -183,7 +182,7 @@ export default function MyLists() {
       <div className="list-content">
         {activeList.length === 0 ? (
           <div className="empty-list">
-            <div className="empty-list-icon">📭</div>
+            <div className="empty-list-icon" aria-hidden="true" />
             <h3>No anime in {activeListTab?.label || 'this list'}</h3>
             <p>Start adding anime from your recommendations!</p>
             <button 
@@ -205,8 +204,9 @@ export default function MyLists() {
 
               return (
                 <div key={item.anime_id} className="list-item">
-                  <AnimeCard 
+                  <AnimeCard
                     anime={anime}
+                    variant="poster"
                     onRate={(rating) => handleRate(item.anime_id, rating)}
                     onListChange={(newList) => handleListChange(item.anime_id, currentList, newList)}
                     currentList={currentList}
@@ -214,9 +214,9 @@ export default function MyLists() {
                   <button
                     className="remove-button"
                     onClick={() => handleRemove(item.anime_id, activeTab)}
-                    title="Remove from list"
+                    aria-label={`Remove ${anime.title} from list`}
                   >
-                    ❌ Remove
+                    ×
                   </button>
                 </div>
               );

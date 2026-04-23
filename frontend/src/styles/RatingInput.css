@@ -12,7 +12,7 @@
 
 .star {
   font-size: 1.2rem;
-  transition: all 0.2s ease;
+  transition: transform var(--transition-base);
   cursor: pointer;
   user-select: none;
 }
@@ -25,15 +25,15 @@
   transform: scale(1.2);
 }
 
-.star:focus {
-  outline: 2px solid #667eea;
-  outline-offset: 2px;
+.star:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
   border-radius: 4px;
 }
 
 .rating-input.disabled .star {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .rating-input.disabled .star:hover {
@@ -41,19 +41,18 @@
 }
 
 .rating-value {
-  font-size: 0.9rem;
+  font-size: var(--type-small);
   font-weight: 600;
-  color: #667eea;
+  color: var(--color-text-primary);
   min-width: 40px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .star {
     font-size: 1rem;
   }
-  
+
   .rating-value {
-    font-size: 0.85rem;
+    font-size: var(--type-xs);
   }
 }

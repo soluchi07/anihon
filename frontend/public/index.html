@@ -3,7 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
     <title>AnimeRec</title>
+    <style>html, body { background: #000; }</style>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('motionReduced') === 'true') {
+            document.documentElement.classList.add('motion-reduced');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

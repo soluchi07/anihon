@@ -211,7 +211,7 @@ export default function AnimeProfile() {
             {anime.image_url ? (
               <img src={anime.image_url} alt={anime.title} />
             ) : (
-              <div className="empty-poster">🎬</div>
+              <div className="empty-poster" aria-hidden="true" />
             )}
           </div>
           
@@ -235,7 +235,7 @@ export default function AnimeProfile() {
               {malScore !== 'N/A' && (
                 <div className="score-item">
                   <span className="score-label">MAL Score</span>
-                  <span className="score-value">⭐ {malScore}</span>
+                  <span className="score-value">★ {malScore}</span>
                 </div>
               )}
               {popularity !== 'N/A' && (
@@ -247,7 +247,7 @@ export default function AnimeProfile() {
               {anime.favorites && (
                 <div className="score-item">
                   <span className="score-label">Favorites</span>
-                  <span className="score-value">❤️ {anime.favorites.toLocaleString()}</span>
+                  <span className="score-value">♥ {anime.favorites.toLocaleString()}</span>
                 </div>
               )}
             </div>
@@ -277,7 +277,7 @@ export default function AnimeProfile() {
                     onClick={handleLike}
                     disabled={userLiked}
                   >
-                    {userLiked ? '❤️ Liked' : '🤍 Add to Liked'}
+                    {userLiked ? '♥ Liked' : '♡ Like'}
                   </button>
                 </div>
               </div>
@@ -334,13 +334,11 @@ export default function AnimeProfile() {
           ) : similarAnime.length > 0 ? (
             <div className="similar-anime-grid">
               {similarAnime.map((similar) => (
-                <div 
-                  key={similar.anime_id} 
-                  onClick={() => navigate(`/anime/${similar.anime_id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <AnimeCard anime={similar} />
-                </div>
+                <AnimeCard
+                  key={similar.anime_id}
+                  anime={similar}
+                  variant="poster"
+                />
               ))}
             </div>
           ) : (
