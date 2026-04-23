@@ -55,7 +55,7 @@ export default function Signup() {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Create Account</h1>
-        <p className="auth-subtitle">Join AnimeRec to get personalized recommendations</p>
+        <p className="auth-subtitle">Join AniHon to get personalized recommendations</p>
 
         {error && <div className="auth-error">{error}</div>}
 

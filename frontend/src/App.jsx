@@ -48,7 +48,7 @@ function Navbar() {
     <nav className="navbar" aria-label="Main navigation">
       <div className="navbar-content">
         <Link to="/" className="navbar-brand">
-          AnimeRec
+          AniHon
         </Link>
 
         <div className="navbar-links">

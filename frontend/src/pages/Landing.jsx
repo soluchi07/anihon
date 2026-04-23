@@ -9,7 +9,7 @@ export default function Landing() {
   return (
     <div className="landing-container">
       <div className="landing-content">
-        <h1 className="landing-title">AnimeRec</h1>
+        <h1 className="landing-title">AniHon</h1>
         <p className="landing-subtitle">
           Discover anime you'll love with AI-powered personalized recommendations
         </p>
