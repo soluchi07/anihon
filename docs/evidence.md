@@ -1,24 +1,5 @@
 # Evidence of Implementation
 
-## Screenshots to Capture (AWS Console)
-
-Take the following screenshots from the AWS Console and add them to this document or a `docs/screenshots/` folder.
-
-| # | Where to go | What to capture |
-|---|---|---|
-| 1 | Lambda → Functions | Full list of 8 Lambda functions (auth, onboarding, recommendation-api, recommendation_worker, anime_getter, interactions, lists, data_ingest) |
-| 2 | Lambda → Any function → Monitor tab | CloudWatch invocation metrics graph showing the function has been called |
-| 3 | DynamoDB → Tables | List of all 5 tables (Users, Anime, Interactions, RecommendationCache, Lists) |
-| 4 | DynamoDB → Anime table → Explore items | A few sample items showing anime metadata and feature vectors |
-| 5 | API Gateway → animerec API → Resources | The resource tree showing all routes (GET/POST /recommendations, /auth/*, /anime/{id}, etc.) |
-| 6 | Cognito → User pools | The AnimeRec user pool with at least one confirmed test user |
-| 7 | S3 → Buckets | The frontend bucket and dataset bucket |
-| 8 | CloudFront → Distributions | The distribution serving the React SPA, with the S3 origin visible |
-| 9 | CloudWatch → Log groups | Log groups for at least 2-3 Lambda functions showing recent log streams |
-| 10 | Browser | The live application — landing page, onboarding page, and recommendations page |
-
----
-
 ## Code Snippets
 
 ### 1. Recommendation Algorithm — Cosine Similarity (`backend/lambdas/recommendation/algorithm.py`)
@@ -148,36 +129,6 @@ The CI pipeline packages all 8 Lambdas and asserts exactly 8 zip files are produ
 ---
 
 ## Sample Output
-
-### Recommendation API Response (example)
-
-```json
-{
-  "status": "ready",
-  "recommendations": [
-    {
-      "anime_id": "1535",
-      "title": "Death Note",
-      "score": 8.62,
-      "genres": ["Mystery", "Psychological", "Supernatural", "Thriller"],
-      "studios": ["Madhouse"],
-      "similarity_score": 0.91,
-      "final_score": 0.847
-    },
-    {
-      "anime_id": "5114",
-      "title": "Fullmetal Alchemist: Brotherhood",
-      "score": 9.11,
-      "genres": ["Action", "Adventure", "Drama", "Fantasy"],
-      "studios": ["Bones"],
-      "similarity_score": 0.83,
-      "final_score": 0.793
-    }
-  ],
-  "cached_at": "2026-04-22T18:30:00Z",
-  "ttl": 86400
-}
-```
 
 ### Backend Test Results
 

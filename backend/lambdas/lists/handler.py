@@ -26,6 +26,8 @@ def _decimal_default(obj):
     if isinstance(obj, Decimal):
         n = float(obj)
         return int(n) if n == int(n) else n
+    if isinstance(obj, set):
+        return list(obj)
     raise TypeError(f"Not serializable: {type(obj)}")
 
 
