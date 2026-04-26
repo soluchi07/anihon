@@ -1,10 +1,10 @@
-# AnimeRec: Anime Recommendation Engine
+# AniHon: Anime Recommendation Engine
 
 A cloud-based anime recommendation system built on AWS serverless architecture. Users authenticate, provide preferences during onboarding, and receive personalized anime recommendations powered by content-based filtering.
 
 ## Overview
 
-AnimeRec is a full-stack web application that demonstrates modern cloud architecture principles by leveraging AWS serverless services. The system delivers a smooth user experience from authentication through personalized recommendations, all while maintaining scalability and cost-effectiveness.
+AniHon is a full-stack web application that demonstrates modern cloud architecture principles by leveraging AWS serverless services. The system delivers a smooth user experience from authentication through personalized recommendations, all while maintaining scalability and cost-effectiveness.
 
 ## Features
 
@@ -51,7 +51,7 @@ AnimeRec is a full-stack web application that demonstrates modern cloud architec
 ## Project Structure
 
 ```
-animerec/
+anihon/
 ├── backend/
 │   └── lambdas/              # Lambda function handlers
 │       ├── anime_getter/      # Anime metadata retrieval
